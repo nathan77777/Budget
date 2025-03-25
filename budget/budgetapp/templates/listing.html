@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Listing</title>
+</head>
+<body>
+<h2>
+    Département {{ deptno }} - Année {{ year }} -
+    {% if type_categorie == "0" %}
+        Dépenses
+    {% else %}
+        Recettes
+    {% endif %}
+</h2>
+
+<table>
+    <tr>
+        <th>Libellé</th>
+        <th>Cat&eacute;gorie</th>
+        <th>Date</th>
+        <th>Montant</th>
+    </tr>
+    {% for temp in table %}
+        <tr>
+            <td>{{ temp.libelle }}</td>
+            <td>{{ temp.id_category.descriptions }}</td>
+            <td>{{ temp.date_operation }}</td>
+            <td>{{ temp.montant }}</td>
+            <td>
+                {% if table_type == "1" %}
+                    <a href="/update/{{ temp.id_prevision }}/{{ table_type }}">Update</a>
+                {% else %}
+                    <a href="/update/{{ temp.id_realisation }}/{{ table_type }}">Update</a>
+                {% endif %}
+            </td>
+        </tr>
+    {% endfor %}
+</table>
+
+</body>
+</html>

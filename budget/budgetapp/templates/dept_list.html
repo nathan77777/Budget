@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+    <h3>Departments list</h3>
+    
+    <ul>
+        {% for dept in dept_list %}
+        	<li><a href="dept_budget/{{ dept.dept_no }}">{{ dept.dept_no }}: {{ dept.name_dept }}</a></li>
+        {% endfor %}
+    </ul>
+
+<a href="previsions/8/2025/0/2">Check</a>
+
+</body>
+</html>

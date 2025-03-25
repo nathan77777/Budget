@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Home</title>
+</head>
+
+<body>
+<fieldset>
+    <legend><h3>Status</h3></legend>
+    <p>Name: {{ emp.name_emp }}</p>
+    <p>Your role(s): execute={{ request.session.role.execute }}, read={{ request.session.role.read }},
+        write={{ request.session.role.write }}</p>
+</fieldset>
+
+<ul>
+    <li><a href="#">Home</a></li>
+    {% if request.session.role.execute or request.session.role.write %}
+    	<li><a href="{% url 'manager' %}">Manage</a></li>
+    {% endif %}
+</ul>
+
+
+</body>
+</html>

@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Login</title>
+</head>
+<body>
+    <h2>Budget management</h2>
+    
+    <form action="{% url 'treatment_login' %}" method="post">
+        {% csrf_token %}
+        <label for="emp_no">Enter employee ID:</label>
+        <input type="text" name="emp_no" id="emp_no" placeholder="ex: 12345" required>
+        
+        {% if error %}
+            <p>{{ error }}</p>
+        {% endif %} 
+    
+        
+        <input type="submit" value="Login">
+    </form>
+
+</body>
+</html>
