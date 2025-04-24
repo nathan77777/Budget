@@ -1,69 +1,27 @@
-CREATE DATABASE Budget;
-
-USE Budget;
-
-
-CREATE TABLE Departements (
-    Deptno INTEGER PRIMARY KEY AUTO_INCREMENT,
-    NameDept VARCHAR(50)
+CREATE TABLE Categorie_produit(
+    idCategorie INTEGER PRIMARY KEY ,
+    Libelle VARCHAR(20)
 );
-
-CREATE TABLE Employes (
-    Empno INTEGER PRIMARY KEY AUTO_INCREMENT,
-    NameEmp VARCHAR(50)
-);
-
--- Role de chaque Departement:
-CREATE TABLE Roles (
-    Deptno INTEGER PRIMARY KEY AUTO_INCREMENT,
-    Executer BOOLEAN,
-    Writer BOOLEAN,
-    Reader BOOLEAN
+CREATE TABLE Categorie_client(
+    idClient INTEGER PRIMARY KEY,
+    Libelle VARCHAR(30),
+    Description VARCHAR(50)
 );
 
 
---------------------------------------------------------------------------
 
--- Concernant les flux externes:
-CREATE TABLE Categories(
-    idCategory INTEGER PRIMARY KEY AUTO_INCREMENT,
-    typeCategorie INTEGER,
-    Descriptions VARCHAR(100),
-    CHECK (typeCategorie IN (0,1))
-);
-
-
---------------------------------------------------------------------------
--- Concernant les previsions & realisations:
-
-CREATE TABLE Previsions(
-    idPrevision INTEGER PRIMARY KEY AUTO_INCREMENT,
-    deptno INTEGER,
-    isValid BOOL,
-    libelle VARCHAR(100),
-    idCategory INTEGER,
-    dateOperation DATE,
-    montant FLOAT,
-    FOREIGN KEY(idCategory) REFERENCES Categories(idCategory)
-);
+INSERT INTO Categorie_produit (idCategorie, Libelle) VALUES
+(1, 'Alimentation'),
+(2, 'Électronique'),
+(3, 'Vêtements'),
+(4, 'Hygiène'),
+(5, 'Loisirs'),
+(6, 'Maison'),
+(7, 'Papeterie');
 
 
-CREATE TABLE Realisations(
-    idRealisation INTEGER PRIMARY KEY AUTO_INCREMENT,
-    deptno INTEGER,
-    isValid BOOL,
-    libelle VARCHAR(100),
-    idCategory INTEGER,
-    dateOperation DATE,
-    montant FLOAT,
-    FOREIGN KEY(idCategory) REFERENCES Categories(idCategory)
-);
-
---------------------------------------------------------------------------
-
-CREATE TABLE soldeDebut(
-    idDepartement INTEGER,
-    anne INTEGER,
-    montant FLOAT,
-    FOREIGN KEY(idDepartement) REFERENCES Departements(Deptno)
-);
+INSERT INTO Categorie_client (idClient, Libelle, Description) VALUES
+(1, 'Junior', 'entre 0 et 16 ans'),
+(2, 'Jeune adulte', 'entre 17 et 30 ans'),
+(3, 'Adulte', 'entre 31 et 60 ans'),
+(4, 'Sénior', 'plus de 60 ans');
