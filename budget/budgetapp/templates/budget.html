@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Budget Mensuel</title>
+    <style>
+        table {
+            border-collapse: collapse;
+            width: 80%;
+            margin: 20px auto;
+        }
+
+        th, td {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            text-align: center;
+        }
+
+        th {
+            background-color: #f4f4f4;
+        }
+
+        .month-title {
+            text-align: center;
+            font-size: 1.2em;
+            margin-top: 40px;
+        }
+    </style>
+</head>
+<body>
+<h1 style="text-align: center;">Budget Mensuel</h1>
+
+<form id="budgetForm">
+    <label for="year">Enter a year</label>
+    <input type="number" name="year" id="year" min="2000" placeholder="eg: 2025" required>
+
+    <input type="submit" value="Enter">
+</form>
+<script>
+    document.getElementById("budgetForm").addEventListener("submit", function (event) {
+        event.preventDefault();  // Empêche l'envoi normal du formulaire
+
+        let year = document.getElementById("year").value;  // Récupère l'année entrée
+
+        // Construire l'URL avec les paramètres
+        // Rediriger vers la nouvelle URL
+        window.location.href = `/budget/{{ dept_no }}/${year}`;
+    });
+</script>
+
+{% if request.session.role.execute %}
+    <p><a href="/waiting/{{ dept_no }}">Fil d'attente</a></p>
+{% endif %}
+
+<a href="{% url 'budget_pdf' dept_no=dept_no year=year %}" target="_blank">
+    Télécharger le PDF
+</a>
+<a href="{% url 'export_budget_csv' %}?dept_no={{ dept_no }}&year={{ year }}" target="_blank">
+    Télécharger le CSV
+</a>
+
+
+
+
+{% for mois in budget %}
+    <div class="month-title">P&eacute;riod : {{ mois.mois }}</div>
+    <table>
+        <thead>
+        <tr>
+            <th>Libellé</th>
+            <th>Prévisions</th>
+            <th>Réalisations</th>
+            <th>Marges</th>
+        </tr>
+        </thead>
+        <tbody>
+        <!-- Solde de début -->
+        <tr>
+            <td>Solde de début</td>
+            <td colspan="3">{{ mois.solde_debut }}</td>
+        </tr>
+        <!-- Dépenses -->
+        <tr>
+            <td>Dépenses</td>
+            <td><a href="/previsions/{{ dept_no }}/{{ mois.mois }}/{{ year }}/0/1">{{ mois.previsions.depenses }}</a>
+            </td>
+            <td><a href="/previsions/{{ dept_no }}/{{ mois.mois }}/{{ year }}/0/2">{{ mois.realisations.depenses }}</a>
+            </td>
+            <td>{{ mois.marge.depenses }}</td>
+        </tr>
+        <!-- Recettes -->
+        <tr>
+            <td>Recettes</td>
+            <td><a href="/previsions/{{ dept_no }}/{{ mois.mois }}/{{ year }}/1/1">{{ mois.previsions.recettes }}</a>
+            </td>
+            <td><a href="/previsions/{{ dept_no }}/{{ mois.mois }}/{{ year }}/1/2">{{ mois.realisations.recettes }}</a>
+            </td>
+            <td>{{ mois.marge.recettes }}</td>
+        </tr>
+        <!-- Solde final -->
+        <tr>
+            <td>Solde final</td>
+            <td colspan="3">{{ mois.soldefin }}</td>
+        </tr>
+        </tbody>
+    </table>
+{% endfor %}
+</body>
+</html>

@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Insertion Libellé</title>
+    <style>
+        :root {
+            --primary-color: #28a745;
+            --hover-color: #218838;
+            --border-color: #ddd;
+            --background-color: #f9f9f9;
+            --input-border: #ccc;
+            --font-family: Arial, sans-serif;
+            --text-color: #333;
+        }
+
+        /* Styles généraux */
+        body {
+            font-family: var(--font-family);
+            color: var(--text-color);
+            margin: 20px;
+            background-color: #fff;
+        }
+
+        /* Titre de la page */
+        h2 {
+            text-align: center;
+            margin-bottom: 20px;
+            color: var(--primary-color);
+        }
+
+        /* Conteneur du formulaire */
+        form {
+            width: 90%;
+            max-width: 600px;
+            margin: auto;
+            padding: 20px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            background-color: var(--background-color);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Style des labels */
+        label {
+            display: block;
+            margin-top: 10px;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        /* Champs de formulaire */
+        input,
+        select,
+        textarea {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid var(--input-border);
+            border-radius: 4px;
+            font-size: 1em;
+        }
+
+        /* Bouton d'enregistrement */
+        button {
+            width: 100%;
+            padding: 12px;
+            background-color: var(--primary-color);
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: background-color 0.3s ease;
+            margin-top: 15px;
+        }
+
+        button:hover {
+            background-color: var(--hover-color);
+        }
+
+        /* Adaptation sur mobile */
+        @media (max-width: 600px) {
+            form {
+                padding: 15px;
+            }
+        }
+
+    </style>
+</head>
+<body>
+<h2 style="text-align: center;">Insertion d'un Libellé</h2>
+<form method="post">
+    {% csrf_token %}
+    <label for="id_type_libelle">Type de Libellé</label>
+    {{ form.type_libelle }}
+
+    <label for="id_category">Catégorie</label>
+    <select name="id_category" id="id_category" class="form-control">
+        {% for group, categories in form.fields.id_category.choices %}
+            {% if group %}
+                <optgroup label="{{ group }}">
+                    {% for category in categories %}
+                        <option value="{{ category.0 }}">{{ category.1 }}</option>
+                    {% endfor %}
+                </optgroup>
+            {% endif %}
+        {% endfor %}
+    </select>
+
+    <label for="id_libelle">Description</label>
+    {{ form.libelle }}
+
+    <label for="id_montant">Montant</label>
+    {{ form.montant }}
+
+    <label for="id_date_operation">Date de l'opération</label>
+    {{ form.date_operation }}
+
+    <button type="submit">Enregistrer</button>
+</form>
+</body>
+</html>

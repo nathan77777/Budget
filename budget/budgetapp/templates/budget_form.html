@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Formulaire Budget</title>
+</head>
+<body>
+    <h1>Consulter le Budget d'un Département</h1>
+    {% if error %}
+        <p style="color:red;">{{ error }}</p>
+    {% endif %}
+    <form method="get" action="{% url 'res_budget' %}">
+        <div>
+            <label for="dept_no">Numéro du Département :</label>
+            <input type="text" id="dept_no" name="dept_no" required>
+        </div>
+        <div>
+            <label for="year">Année :</label>
+            <input type="text" id="year" name="year" required>
+        </div>
+        <button type="submit">Valider</button>
+    </form>
+</body>
+</html>

@@ -4,6 +4,91 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Home</title>
+    <style>
+        :root {
+            --primary-color: #3498db;
+            --text-color: #333;
+            --background-color: #f9f9f9;
+            --border-color: #ddd;
+            --link-color: #3498db;
+            --link-hover: #2980b9;
+            --fieldset-bg: #fff;
+        }
+
+        /* Styles de base */
+        body {
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+        }
+
+        /* Fieldset et légende */
+        fieldset {
+            max-width: 500px;
+            margin: 0 auto 20px;
+            border: 1px solid var(--border-color);
+            border-radius: 5px;
+            background-color: var(--fieldset-bg);
+            padding: 15px;
+        }
+
+        legend h3 {
+            margin: 0;
+            color: var(--primary-color);
+        }
+
+        /* Paragraphes */
+        p {
+            margin: 10px 0;
+        }
+
+        /* Navigation en liste */
+        ul {
+            max-width: 500px;
+            margin: 0 auto;
+            padding: 0;
+            list-style: none;
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        ul li {
+            padding: 10px;
+            background-color: var(--fieldset-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 5px;
+        }
+
+        ul li a {
+            text-decoration: none;
+            color: var(--link-color);
+            transition: color 0.3s ease;
+        }
+
+        ul li a:hover {
+            color: var(--link-hover);
+        }
+
+        /* Responsive */
+        @media (max-width: 600px) {
+            body {
+                padding: 10px;
+            }
+
+            fieldset {
+                padding: 10px;
+            }
+
+            ul {
+                flex-direction: column;
+                gap: 5px;
+            }
+        }
+
+    </style>
 </head>
 
 <body>
@@ -17,8 +102,9 @@
 <ul>
     <li><a href="#">Home</a></li>
     {% if request.session.role.execute or request.session.role.write %}
-    	<li><a href="{% url 'manager' %}">Manage</a></li>
+        <li><a href="{% url 'manager' %}">Manage</a></li>
     {% endif %}
+    <li><a href="disconnect">Disconnect</a></li>
 </ul>
 
 
