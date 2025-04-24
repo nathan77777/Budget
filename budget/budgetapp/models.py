@@ -24,6 +24,17 @@ class Employes(models.Model):
         db_table = 'Employes'
 
 
+class CRM(models.Model):
+    idCRM = models.AutoField(primary_key=True)
+    idClient = models.IntegerField()
+    idProduct = models.IntegerField()
+    dateCRM = models.DateField(null=True, blank=True)
+    montant = models.FloatField(null=True, blank=True)
+
+    class Meta:
+        db_table = 'CRM'
+
+
 class Roles(models.Model):
     deptno = models.AutoField(primary_key=True)
     executer = models.BooleanField(default=False)
