@@ -169,6 +169,29 @@ h1, h2 {
           </ul>
         </div>
       </div>
+    
+        
+        <!-- CRM -->
+      <div class="col-md-6">
+        <div class="card mb-3">
+          <div class="card-header bg-secondary text-white">
+            CRM
+          </div>
+          <ul class="list-group list-group-flush">
+            {% for item in crm %}
+              <li class="list-group-item">
+                <strong>{{ item.libelle }}</strong><br>
+                <small>Montant: ${{ item.montant|default:"Aucune information supplémentaire" }}</small>
+                <a href="/accept/3/{{ item.idCRM }}"><button>Accept</button></a>
+              </li>
+            {% empty %}
+              <li class="list-group-item"><em>Aucune CRM.</em></li>
+            {% endfor %}
+          </ul>
+        </div>
+      </div>
+    
+    
     </div>
   </div>
   

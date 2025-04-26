@@ -67,3 +67,14 @@ CREATE TABLE soldeDebut(
     montant FLOAT,
     FOREIGN KEY(idDepartement) REFERENCES Departements(Deptno)
 );
+
+create table CRM
+(
+    idCRM int auto_increment primary key,
+    idClient int NOT NULL,
+    idProduct int NOT NULL,
+    dateCRM date,
+    montant FLOAT
+);
+
+

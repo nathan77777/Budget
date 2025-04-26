@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Catégories et Comportements</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+            background-color: #f8f9fa;
+        }
+
+        .container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .section {
+            flex: 1;
+            min-width: 300px;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+        }
+
+        h1 {
+            color: #2c3e50;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10px;
+            margin-top: 0;
+            font-size: 20px;
+        }
+
+        ul {
+            padding: 0;
+            list-style-type: none;
+        }
+
+        li {
+            padding: 8px 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        li:last-child {
+            border-bottom: none;
+        }
+
+        .empty-message {
+            color: #7f8c8d;
+            font-style: italic;
+        }
+
+        .category-client {
+            color: #27ae60;
+        }
+
+        .category-client .description {
+            color: #7f8c8d;
+            font-size: 0.9em;
+            margin-left: 5px;
+            display: block;
+        }
+
+        .category-product {
+            color: #2980b9;
+        }
+
+        .comportement {
+            color: #8e44ad;
+        }
+
+        /* Styles pour les titres des sections */
+        .client-section h1 {
+            border-bottom-color: #27ae60;
+        }
+
+        .product-section h1 {
+            border-bottom-color: #2980b9;
+        }
+
+        .comportement-section h1 {
+            border-bottom-color: #8e44ad;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                flex-direction: column;
+            }
+            
+            .section {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="section client-section">
+            <h1>Catégories de Clients</h1>
+            <ul>
+                {% for c in clients %}
+                    <li class="category-client">
+                        <strong>{{ c.Libelle }}</strong>
+                        <span class="description">{{ c.Description }}</span>
+                    </li>
+                {% empty %}
+                    <li class="empty-message">Aucune catégorie de client.</li>
+                {% endfor %}
+            </ul>
+        </div>
+
+        <div class="section product-section">
+            <h1>Catégories de Produits</h1>
+            <ul>
+                {% for p in produits %}
+                    <li class="category-product">{{ p.Libelle }}</li>
+                {% empty %}
+                    <li class="empty-message">Aucune catégorie de produit.</li>
+                {% endfor %}
+            </ul>
+        </div>
+
+        <div class="section comportement-section">
+        
+            <h1>Comportements</h1>
+        {% if comportements %}
+        	 <ul>
+                {% for comp in comportements %}
+                    <li class="comportement">{{ comp.libelle }}</li>
+                {% empty %}
+                    <li class="empty-message">Aucun comportement enregistré.</li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p>Null</p>
+        {% endif %}
+           
+        </div>
+    </div>
+</body>
+</html>

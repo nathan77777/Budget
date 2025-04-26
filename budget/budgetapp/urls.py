@@ -17,4 +17,7 @@ urlpatterns = [
     path('budget/pdf/<str:dept_no>/<str:year>/', views.budget_pdf_view, name='budget_pdf'),
     path('budget/export/csv/', views.export_budget_csv, name='export_budget_csv'),
     path('disconnect', views.disconnect, name='disconnect'),
+    path('categories-et-comportements/', views.page_categorie_et_comportement, name='categories_et_comportements'),
+    path('graphe/', views.graphe_realisations, name='graphe_realisations'),
+    path('export-pdf/', views.export_pdf, name='export_pdf'),
 ]

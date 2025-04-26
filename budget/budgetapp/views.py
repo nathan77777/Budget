@@ -1,6 +1,9 @@
 import csv
+import json
+from operator import truth
 
-
+from django.db.models import Sum
+from django.db.models.functions import ExtractMonth
 from django.http import HttpResponse
 from django.template.loader import render_to_string
 from django.urls import reverse
@@ -9,12 +12,20 @@ from django.contrib import messages
 from django.shortcuts import redirect, render
 
 
-from .models import Departements, Previsions, Realisations, Categories
+from .models import Departements, Previsions, Realisations, Categories, CRM, CategorieProduit, CategorieClient, \
+    RecetteCRM
 from .services.Checker import Checker
 from .services.form import LibelleForm
 from .utils.Utilities import dept_budget
 
 from xhtml2pdf import pisa
+
+from django.http import HttpResponse
+from django.views.decorators.csrf import csrf_exempt
+from django.utils import timezone
+from io import BytesIO
+import base64
+import re
 
 
 # Create your views here.
@@ -39,6 +50,53 @@ def treatment_login(request):
         return render(request, 'home.html', {'emp': emp, })
 
 
+def page_categorie_et_comportement(request):
+    produits = CategorieProduit.objects.all()
+    clients = CategorieClient.objects.all()
+    comportements = CRM.objects.all()
+
+
+    context = {
+        'produits': produits,
+        'clients': clients,
+        'comportements': comportements,
+    }
+
+    return render(request, 'categorie_et_comportement.html', context)
+
+
+def graphe_realisations(request):
+    # Données des réalisations
+    real_data = (
+        Realisations.objects.filter(isValid=0)
+        .annotate(mois=ExtractMonth('date_operation'))
+        .values('mois')
+        .annotate(total=Sum('montant'))
+        .order_by('mois')
+    )
+
+    realisations_par_mois = [0] * 12
+    for item in real_data:
+        realisations_par_mois[item['mois'] - 1] = float(item['total'])
+
+    # Données des recettes CRM (tu peux filtrer par année ici si tu veux)
+    recette_data = (
+        RecetteCRM.objects.values('mois')
+        .annotate(total=Sum('montant'))
+        .order_by('mois')
+    )
+
+    recettes_par_mois = [0] * 12
+    for item in recette_data:
+        recettes_par_mois[item['mois'] - 1] = float(item['total'])
+
+    context = {
+        'realisations': realisations_par_mois,
+        'recettes': recettes_par_mois
+    }
+    return render(request, 'graphe.html', context)
+
+
 def dept_manager(request):
     emp = request.session.get('employee')
     role = request.session.get('role')
@@ -51,15 +109,18 @@ def dept_manager(request):
 
 
 def get_list(request, deptno, month, year, type_categorie, table_type):
+    crm = None
     if int(table_type) == 1:
         data = Checker.get_previsions_by_type(deptno, month, year, type_categorie)
 
     else:
         data = Checker.get_realisations_by_type(deptno, month, year, type_categorie)
+        crm = CRM.get_crms_by_month_year(month, year)
 
     context = {
         'table_type': table_type,
         'table': data,
+        'crm_table': crm,
         'deptno': deptno,
         'year': year,
         'type_categorie': type_categorie,
@@ -140,27 +201,55 @@ def insert_libelle(request):
         form = LibelleForm(request.POST)
         if form.is_valid():
             type_libelle = form.cleaned_data["type_libelle"]
-            id_category = Categories.objects.get(id_category=form.cleaned_data["id_category"])
             libelle = form.cleaned_data["libelle"]
             montant = form.cleaned_data["montant"]
             date_operation = form.cleaned_data["date_operation"]
 
-            if type_libelle == "prevision":
-                Previsions.objects.create(
-                    id_category=id_category,
-                    libelle=libelle,
+            if type_libelle == "crm":
+                id_produit_category = form.cleaned_data["id_product_category"]
+                id_client_category = form.cleaned_data["id_client_category"]
+                is_valid = False
+
+                roles = request.session.get('role')
+                emp = request.session.get('employee')
+                montant_crm = (CRM.get_total_valid_by_month_year(date_operation.month, date_operation.year)
+                                + Realisations.get_total_valid_by_month_year(emp['deptno'], date_operation.month, date_operation.year))
+
+                print(montant_crm)
+
+                if roles['execute'] or montant_crm > montant:
+                    is_valid = True
+
+
+                CRM.objects.create(
+                    idClient=id_client_category,
+                    idProduct=id_produit_category,
+                    dateCRM=date_operation,
                     montant=montant,
-                    date_operation=date_operation,
-                    isValid=False
+                    libelle=libelle,
+                    isValid=is_valid
                 )
+                print("Succeed")
+
             else:
-                Realisations.objects.create(
-                    id_category=id_category,
-                    libelle=libelle,
-                    montant=montant,
-                    date_operation=date_operation,
-                    isValid=False
-                )
+                print("non")
+                id_category = Categories.objects.get(id_category=form.cleaned_data["id_category"])
+                if type_libelle == "prevision":
+                    Previsions.objects.create(
+                        id_category=id_category,
+                        libelle=libelle,
+                        montant=montant,
+                        date_operation=date_operation,
+                        isValid=False
+                    )
+                else:
+                    Realisations.objects.create(
+                        id_category=id_category,
+                        libelle=libelle,
+                        montant=montant,
+                        date_operation=date_operation,
+                        isValid=False
+                    )
 
             return redirect('insert_libelle')  # Redirection après succès
 
@@ -178,6 +267,7 @@ def get_waiting_list(request, deptno):
     expense_previsions_waiting = Checker.get_non_previsions_by_type(deptno, 0)
     recette_realisations_waiting = Checker.get_non_realisations_by_type(deptno, 1)
     expense_realisations_waiting = Checker.get_non_realisations_by_type(deptno, 0)
+    crm = CRM.get_all_invalid()
 
     context = {
         'deptno': deptno,
@@ -185,16 +275,20 @@ def get_waiting_list(request, deptno):
         'expense_previsions_waiting': expense_previsions_waiting,
         'recette_realisations_waiting': recette_realisations_waiting,
         'expense_realisations_waiting': expense_realisations_waiting,
+        'crm': crm
     }
     return render(request, 'waiting.html', context)
 
 
 def accept(request, table_id, element_id):
     # Récupérer l'élément concerné en fonction de table_id
+    global deptno
     if table_id == "1":
         spec_element = Previsions.objects.filter(id_prevision=element_id)
-    else:
+    elif table_id == "2":
         spec_element = Realisations.objects.filter(id_realisation=element_id)
+    else:
+        spec_element = CRM.objects.filter(idCRM=element_id)
 
     # Mettre à jour l'élément pour qu'il soit validé
     spec_element.update(isValid=True)
@@ -202,11 +296,26 @@ def accept(request, table_id, element_id):
     # Ajouter le message de succès
     messages.success(request, 'Successfully Accepted')
 
-    # Récupérer le deptno à partir de l'élément mis à jour (en supposant que l'élément possède un attribut deptno)
-    deptno = spec_element.first().deptno if spec_element.exists() else None
+    if table_id == "1" or table_id == "2":
 
-    # Rediriger vers la vue get_waiting_list en passant le deptno
-    return redirect(reverse('waiting', kwargs={'deptno': deptno.deptno}))
+        # Récupérer le deptno à partir de l'élément mis à jour (en supposant que l'élément possède un attribut deptno)
+        deptno = spec_element.first().deptno if spec_element.exists() else None
+
+        # Rediriger vers la vue get_waiting_list en passant le deptno
+        return redirect(reverse('waiting', kwargs={'deptno': deptno.deptno}))
+
+    else:
+        emp = request.session.get("employee")
+
+        if emp:
+            # Récupérer le deptno à partir de l'élément mis à jour (en supposant que l'élément possède un attribut deptno)
+            deptno = emp['deptno']
+
+
+        # Rediriger vers la vue get_waiting_list en passant le deptno
+        return redirect(reverse('waiting', kwargs={'deptno': deptno}))
+
+
 
 
 def budget_pdf_view(request, dept_no, year):
@@ -274,3 +383,116 @@ def export_budget_csv(request):
 def disconnect(request):
     request.session.flush()
     return render(request, 'login.html')
+
+
+def render_to_pdf(template_src, context_dict={}):
+    result = BytesIO()
+    pisa_status = pisa.CreatePDF(BytesIO(template_src.encode('utf-8')), dest=result)
+    if not pisa_status.err:
+        return result
+    return None
+
+
+@csrf_exempt  # Vous pouvez supprimer ceci si vous gérez le CSRF correctement
+def export_pdf(request):
+    if request.method == 'POST':
+        try:
+            # Récupérer l'image du graphique et les données
+            chart_image = request.POST.get('chartImage')
+            titre = request.POST.get('titre', 'Comparaison : Réalisations vs Recettes CRM')
+
+            # Récupérer les données pour éventuellement ajouter un tableau
+            try:
+                realisations = json.loads(request.POST.get('realisations', '[]'))
+                recettes = json.loads(request.POST.get('recettes', '[]'))
+            except:
+                realisations = []
+                recettes = []
+
+            # Nettoyer l'image base64
+            if chart_image and chart_image.startswith('data:image'):
+                # Extraire la partie base64 après la virgule
+                chart_image = re.sub('^data:image/[^;]*;base64,', '', chart_image)
+
+            # Générer le tableau de données
+            table_rows = ''
+            months = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
+                      'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre']
+
+            for i in range(min(len(months), len(realisations), len(recettes))):
+                table_rows += f'''
+                <tr>
+                    <td>{months[i]}</td>
+                    <td>{realisations[i]:,.2f} €</td>
+                    <td>{recettes[i]:,.2f} €</td>
+                </tr>
+                '''
+
+            # Créer le HTML pour le PDF
+            html = f'''
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <meta charset="UTF-8">
+                <title>{titre}</title>
+                <style>
+                    body {{ font-family: Arial, sans-serif; padding: 20px; }}
+                    .header {{ text-align: center; margin-bottom: 20px; }}
+                    .chart-container {{ text-align: center; margin-bottom: 30px; }}
+                    table {{ width: 100%; border-collapse: collapse; margin-top: 30px; }}
+                    table, th, td {{ border: 1px solid #ddd; }}
+                    th, td {{ padding: 8px; text-align: right; }}
+                    th {{ background-color: #f2f2f2; }}
+                    tr:nth-child(even) {{ background-color: #f9f9f9; }}
+                    .footer {{ margin-top: 30px; text-align: center; font-size: 0.8em; color: #666; }}
+                </style>
+            </head>
+            <body>
+                <div class="header">
+                    <h1>{titre}</h1>
+                    <p>Généré le {timezone.now().strftime('%d/%m/%Y')}</p>
+                </div>
+
+                <div class="chart-container">
+                    <img src="data:image/png;base64,{chart_image}" width="700">
+                </div>
+
+                <h2>Données détaillées</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Mois</th>
+                            <th>Réalisations (€)</th>
+                            <th>Recettes CRM (€)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {table_rows}
+                    </tbody>
+                </table>
+
+                <div class="footer">
+                    <p>Ce document est généré automatiquement et contient des informations confidentielles.</p>
+                </div>
+            </body>
+            </html>
+            '''
+
+            # Générer le PDF
+            pdf = render_to_pdf(html)
+            if pdf:
+                response = HttpResponse(pdf.getvalue(), content_type='application/pdf')
+                filename = f"rapport_{timezone.now().strftime('%Y%m%d')}.pdf"
+                response['Content-Disposition'] = f'attachment; filename="{filename}"'
+                return response
+
+            return HttpResponse("Erreur lors de la génération du PDF", status=500)
+
+        except Exception as e:
+            import traceback
+            print(f"Erreur: {str(e)}")
+            print(traceback.format_exc())
+            return HttpResponse(f"Erreur: {str(e)}", status=500)
+
+    return HttpResponse("Méthode non autorisée", status=405)
+

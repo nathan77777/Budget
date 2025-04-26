@@ -1,7 +1,7 @@
 from django.db.models import Sum
-from django.db.models.expressions import result
 
-from budgetapp.models import SoldeDebut, Previsions, Realisations
+from budgetapp.models import SoldeDebut, Previsions, Realisations, CRM
+
 
 # Ato koa
 def dept_budget(dept_no: int, year: int) -> list[dict]:
@@ -38,6 +38,11 @@ def dept_budget(dept_no: int, year: int) -> list[dict]:
         prev_benefice = prev_recettes - prev_depenses
 
         # Réalisations : même logique que pour les Prévisions
+
+        var = CRM.get_total_valid_by_month_year(month, year)
+
+        print(f"month: {month}, year: {year}, value: {var}")
+
         real_depenses = (
             Realisations.objects.filter(
                 date_operation__year=year,
@@ -46,8 +51,10 @@ def dept_budget(dept_no: int, year: int) -> list[dict]:
                 isValid=True,
                 id_category__type_categorie=0  # Dépense
             )
+
             .aggregate(total=Sum('montant'))['total'] or 0
-        )
+        ) + var
+
         real_recettes = (
             Realisations.objects.filter(
                 date_operation__year=year,

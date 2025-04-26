@@ -6,16 +6,16 @@ from budgetapp.models import Employes, Roles, Previsions, Realisations
 class Checker:
 
     @staticmethod
-    def login(empno:int):
+    def login(empno: int):
         res = None
         emp = Employes.objects.filter(empno=empno).first()
         if emp:
-            res = {'empno': emp.empno, 'deptno':emp.deptno.deptno, 'name_emp': emp.name_emp}
+            res = {'empno': emp.empno, 'deptno': emp.deptno.deptno, 'name_emp': emp.name_emp}
         return res
 
 
     @staticmethod
-    def get_role(empno:int):
+    def get_role(empno: int):
         emp = Employes.objects.filter(empno=empno).first()
         if emp:
             dept = emp.deptno
@@ -35,7 +35,6 @@ class Checker:
             isValid=True  # On filtre uniquement les prévisions validées
         ).select_related('id_category')  # Précharge les catégories pour optimiser la requête
         return previsions
-
 
 
     @staticmethod
@@ -62,7 +61,6 @@ class Checker:
         return previsions
 
 
-
     @staticmethod
     def get_non_realisations_by_type(deptno, type_categorie):
         # Récupérer uniquement les prévisions du type demandé (0 = dépenses, 1 = recettes)
@@ -73,3 +71,5 @@ class Checker:
             isValid=False  # On filtre uniquement les prévisions validées
         ).select_related('id_category')  # Précharge les catégories pour optimiser la requête
         return realisations
+
+

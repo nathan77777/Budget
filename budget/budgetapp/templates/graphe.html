@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Graphique Réalisations vs Recettes CRM</title>
+    {% load static %}
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .export-button {
+            margin-top: 20px;
+            padding: 10px 15px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .export-button:hover {
+            background-color: #45a049;
+        }
+    </style>
+</head>
+<body>
+    <h2>Comparaison : Réalisations vs Recettes CRM</h2>
+    <canvas id="realisationsChart" width="800" height="400"></canvas>
+    
+    <button class="export-button" id="exportPdf">Exporter en PDF</button>
+
+    <script>
+        const ctx = document.getElementById('realisationsChart').getContext('2d');
+        const data = {
+            labels: ['Jan', 'Fév', 'Mars', 'Avr', 'Mai', 'Juin', 'Juil', 'Août', 'Sept', 'Oct', 'Nov', 'Déc'],
+            datasets: [
+                {
+                    label: 'Réalisations',
+                    data: {{ realisations|safe }},
+                    backgroundColor: 'rgba(54, 162, 235, 0.5)',
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    borderWidth: 1
+                },
+                {
+                    label: 'Recettes CRM',
+                    data: {{ recettes|safe }},
+                    backgroundColor: 'rgba(255, 159, 64, 0.5)',
+                    borderColor: 'rgba(255, 159, 64, 1)',
+                    borderWidth: 1
+                }
+            ]
+        };
+
+        const config = {
+            type: 'bar',
+            data: data,
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                },
+                animation: {
+                    onComplete: function() {
+                        // Store chart image for PDF export
+                        window.chartImage = this.toBase64Image();
+                    }
+                }
+            }
+        };
+
+        const myChart = new Chart(ctx, config);
+
+        // Ajouter le CSRF token pour les requêtes POST Django
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+
+        // Event listener for export button
+        document.getElementById('exportPdf').addEventListener('click', function() {
+            exportToPdf();
+        });
+
+        function exportToPdf() {
+            // Get the chart image
+            const chartImage = window.chartImage;
+            
+            // Get additional data for PDF
+            const formData = new FormData();
+            formData.append('chartImage', chartImage);
+            formData.append('titre', 'Comparaison : Réalisations vs Recettes CRM');
+            formData.append('realisations', JSON.stringify({{ realisations|safe }}));
+            formData.append('recettes', JSON.stringify({{ recettes|safe }}));
+            
+            // Send request to server endpoint with CSRF token
+            fetch('{% url "export_pdf" %}', {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: formData
+            })
+            .then(response => response.blob())
+            .then(blob => {
+                // Create a download link and trigger it
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.style.display = 'none';
+                a.href = url;
+                a.download = 'realisations_recettes_crm.pdf';
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+            })
+            .catch(error => console.error('Erreur lors de l\'exportation en PDF:', error));
+        }
+    </script>
+</body>
+</html>

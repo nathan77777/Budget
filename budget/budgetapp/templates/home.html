@@ -103,6 +103,8 @@
     <li><a href="#">Home</a></li>
     {% if request.session.role.execute or request.session.role.write %}
         <li><a href="{% url 'manager' %}">Manage</a></li>
+        <li><a href="{% url 'categories_et_comportements' %}">Cat&eacute;gories</a></li>
+        <li><a href="{% url 'graphe_realisations' %}">Graphe</a></li>
     {% endif %}
     <li><a href="disconnect">Disconnect</a></li>
 </ul>

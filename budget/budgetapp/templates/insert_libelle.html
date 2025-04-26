@@ -16,7 +16,7 @@
 
         /* Styles généraux */
         body {
-            font-family: var(--font-family);
+            font-family: var(--font-family), serif;
             color: var(--text-color);
             margin: 20px;
             background-color: #fff;
@@ -86,27 +86,34 @@
             }
         }
 
+        /* Style pour les champs cachés */
+        .hidden {
+            display: none;
+        }
     </style>
 </head>
 <body>
 <h2 style="text-align: center;">Insertion d'un Libellé</h2>
 <form method="post">
     {% csrf_token %}
+    
     <label for="id_type_libelle">Type de Libellé</label>
     {{ form.type_libelle }}
 
-    <label for="id_category">Catégorie</label>
-    <select name="id_category" id="id_category" class="form-control">
-        {% for group, categories in form.fields.id_category.choices %}
-            {% if group %}
-                <optgroup label="{{ group }}">
-                    {% for category in categories %}
-                        <option value="{{ category.0 }}">{{ category.1 }}</option>
-                    {% endfor %}
-                </optgroup>
-            {% endif %}
-        {% endfor %}
-    </select>
+    <!-- Champ catégorie standard -->
+    <div id="standard_category_container">
+        <label for="id_category">Catégorie</label>
+        {{ form.id_category }}
+    </div>
+
+    <!-- Champs spécifiques pour CRM -->
+    <div id="crm_fields_container" class="hidden">
+        <label for="id_product_category">Catégorie produits</label>
+        {{ form.id_product_category }}
+
+        <label for="id_client_category">Catégorie client</label>
+        {{ form.id_client_category }}
+    </div>
 
     <label for="id_libelle">Description</label>
     {{ form.libelle }}
@@ -119,5 +126,30 @@
 
     <button type="submit">Enregistrer</button>
 </form>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const typeLibelleSelect = document.getElementById('id_type_libelle');
+        const standardCategoryContainer = document.getElementById('standard_category_container');
+        const crmFieldsContainer = document.getElementById('crm_fields_container');
+
+        // Fonction pour gérer l'affichage des champs en fonction du type sélectionné
+        function toggleFields() {
+            if (typeLibelleSelect.value === 'crm') {
+                standardCategoryContainer.classList.add('hidden');
+                crmFieldsContainer.classList.remove('hidden');
+            } else {
+                standardCategoryContainer.classList.remove('hidden');
+                crmFieldsContainer.classList.add('hidden');
+            }
+        }
+
+        // Initialiser l'affichage des champs
+        toggleFields();
+
+        // Écouter les changements sur le sélecteur de type
+        typeLibelleSelect.addEventListener('change', toggleFields);
+    });
+</script>
 </body>
 </html>

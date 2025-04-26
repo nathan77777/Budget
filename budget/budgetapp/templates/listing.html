@@ -137,6 +137,18 @@
             </td>
         </tr>
     {% endfor %}
+
+    {% if crm_table %}
+    	{% for temp in crm_table %}
+        <tr>
+            <td>{{ temp.libelle }}</td>
+            <td>CRM</td>
+            <td>{{ temp.dateCRM }}</td>
+            <td>{{ temp.montant }}</td>
+ 
+        </tr>
+    {% endfor %}
+    {% endif %} 
 </table>
 
 </body>
