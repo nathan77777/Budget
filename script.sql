@@ -77,4 +77,56 @@ create table CRM
     montant FLOAT
 );
 
+--------------------------------------------------------------------------
 
+CREATE TABLE clients(
+    id INTEGER PRIMARY KEY AUTO_INCREMENT,
+    nom VARCHAR(20),
+    prenoms VARCHAR(20)
+);
+
+
+
+CREATE TABLE categorie_tickets(
+    id INTEGER AUTO_INCREMENT PRIMARY KEY,
+    descriptions VARCHAR(20)
+);
+
+
+
+CREATE TABLE tickets(
+    id INTEGER PRIMARY key AUTO_INCREMENT,
+    id_client INTEGER,
+    priorite INTEGER,
+    categorie_ticket INTEGER,
+    objet VARCHAR(20),
+    date_creation DATETIME,
+    FOREIGN KEY(id_client) REFERENCES clients(id),
+    FOREIGN KEY(priorite) REFERENCES priorites(id),
+    FOREIGN KEY(categorie_ticket) REFERENCES categorie_tickets(id)
+);
+
+
+CREATE TABLE statuts_tickets(
+    id INTEGER AUTO_INCREMENT PRIMARY key,
+    descriptions VARCHAR(20)
+);
+
+
+CREATE TABLE historique_statuts_tickets(
+    id_ticket INTEGER,
+    id_statuts INTEGER,
+    FOREIGN key(id_ticket) REFERENCES tickets(id)
+    FOREIGN key(id_statuts) REFERENCES statuts_tickets(id)
+);
+
+
+CREATE TABLE historique_affectation_tickets(
+    id_ticket INTEGER,
+    id_employee INTEGER DEFAULT NULL,
+    id_department INTEGER DEFAULT NULL,
+    id_attributeur INTEGER,
+    FOREIGN key id_employee REFERENCES Employes(Empno),
+    FOREIGN key id_attributeur REFERENCES Employes(Empno),
+    FOREIGN key id_department REFERENCES Departements(deptno)
+);

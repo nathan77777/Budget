@@ -217,3 +217,65 @@ class SoldeDebut(models.Model):
 
     class Meta:
         db_table = 'soldeDebut'
+        
+        
+        
+    # -------------------------
+    
+    
+class Client(models.Model):
+    nom = models.CharField(max_length=20)
+    prenoms = models.CharField(max_length=20)
+
+    def __str__(self):
+        return f"{self.nom} {self.prenoms}"
+
+
+class CategorieTicket(models.Model):
+    descriptions = models.CharField(max_length=20)
+
+    def __str__(self):
+        return self.descriptions
+
+
+class Priorite(models.Model):
+    descriptions = models.CharField(max_length=20)
+
+    def __str__(self):
+        return self.descriptions
+
+
+class Ticket(models.Model):
+    id_client = models.ForeignKey(Client, on_delete=models.CASCADE)
+    priorite = models.ForeignKey(Priorite, on_delete=models.CASCADE)
+    categorie_ticket = models.ForeignKey(CategorieTicket, on_delete=models.CASCADE)
+    objet = models.CharField(max_length=20)
+    date_creation = models.DateTimeField()
+
+    def __str__(self):
+        return f"Ticket {self.id} - {self.objet}"
+
+
+class StatutTicket(models.Model):
+    descriptions = models.CharField(max_length=20)
+
+    def __str__(self):
+        return self.descriptions
+
+
+class HistoriqueStatutTicket(models.Model):
+    id_ticket = models.ForeignKey(Ticket, on_delete=models.CASCADE)
+    id_statuts = models.ForeignKey(StatutTicket, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return f"HistoriqueStatutTicket: Ticket {self.id_ticket_id} - Statut {self.id_statuts_id}"
+
+
+class HistoriqueAffectationTicket(models.Model):
+    id_ticket = models.ForeignKey(Ticket, on_delete=models.CASCADE)
+    id_employee = models.ForeignKey(Employes, on_delete=models.SET_NULL, null=True, related_name='employee_assignments')
+    id_department = models.ForeignKey(Departements, on_delete=models.SET_NULL, null=True)
+    id_attributeur = models.ForeignKey(Employes, on_delete=models.CASCADE, related_name='assigned_by')
+
+    def __str__(self):
+        return f"Affectation de Ticket {self.id_ticket_id}"

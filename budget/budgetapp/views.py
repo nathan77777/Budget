@@ -10,8 +10,8 @@ from django.contrib import messages
 from django.shortcuts import redirect, render
 
 
-from .models import Departements, Previsions, Realisations, Categories, CRM, CategorieProduit, CategorieClient, \
-    RecetteCRM
+from .models import Departements, Previsions, Realisations, \
+    Categories, CRM, CategorieProduit, CategorieClient, RecetteCRM
 from .services.Checker import Checker
 from .services.form import LibelleForm
 from .utils.Utilities import dept_budget
@@ -25,7 +25,6 @@ from io import BytesIO
 import re
 
 
-# Create your views here.
 def login(request):
     return render(request, 'login.html')
 
@@ -502,7 +501,7 @@ def export_pdf(request):
 
 from django.shortcuts import render, get_object_or_404
 from django.http import JsonResponse
-from django.db.models import Count, Sum, Avg
+from django.db.models import Count, Sum
 from .models import CRM, CategorieClient, CategorieProduit
 from django.db import connection
 
@@ -753,7 +752,6 @@ def accept_multiple(request, type, cat_type):
 
 
 import csv
-import io
 from django.contrib import messages
 from django.shortcuts import render, redirect
 from .services.form import UploadCSVForm
