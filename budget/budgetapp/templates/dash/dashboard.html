@@ -1,0 +1,642 @@
+{% extends 'base.html' %}
+
+{% block title %}Tableau de bord - Comportements Clients{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h2">
+            <i class="fas fa-chart-pie text-primary"></i> Analyse des comportements clients
+        </h1>
+        <div class="btn-group">
+            <a href="{% url 'home_retour' %}">
+            <button type="button" class="btn btn-primary" id="toggleView">
+                <i class="fas fa-th-large"></i> Retour vers Accueil
+            </button>
+            </a>
+        </div>
+    </div>
+    
+    <!-- Cartes statistiques -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title mb-0">Total Comportements</h6>
+                            <div class="stat-number">{{ recent_behaviors.count }}</div>
+                        </div>
+                        <i class="fas fa-comments fa-3x opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title mb-0">Catégories Clients</h6>
+                            <div class="stat-number">{{ client_categories.count }}</div>
+                        </div>
+                        <i class="fas fa-users fa-3x opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title mb-0">Catégories Produits</h6>
+                            <div class="stat-number">{{ product_categories.count }}</div>
+                        </div>
+                        <i class="fas fa-tags fa-3x opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-danger text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title mb-0">Types Comportements</h6>
+                            <div class="stat-number">{{ common_behaviors|length }}</div>
+                        </div>
+                        <i class="fas fa-chart-line fa-3x opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <!-- Diagramme de relation des entités -->
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Relations entre Entités</h5>
+                    <div class="btn-group btn-group-sm">
+                        <button class="btn btn-outline-light" id="zoomIn">
+                            <i class="fas fa-search-plus"></i>
+                        </button>
+                        <button class="btn btn-outline-light" id="zoomOut">
+                            <i class="fas fa-search-minus"></i>
+                        </button>
+                        <button class="btn btn-outline-light" id="resetZoom">
+                            <i class="fas fa-sync"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div id="relationshipDiagram" class="relationship-diagram"></div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Derniers comportements enregistrés -->
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Derniers Comportements Clients</h5>
+                </div>
+                <div class="card-body p-0">
+                    <ul class="list-group list-group-flush">
+                        {% for behavior in recent_behaviors %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="mb-1">{{ behavior.libelle }}</h6>
+                                <small class="text-muted">
+                                    {{ behavior.dateCRM|date:"d/m/Y" }} - 
+                                    {% if behavior.montant %}{{ behavior.montant }}€{% else %}N/A{% endif %}
+                                </small>
+                                <p class="mb-1 small text-muted">{{ behavior.descComportement }}</p>
+                            </div>
+                            <a href="{% url 'behavior_detail' behavior.idCRM %}" class="btn btn-sm btn-outline-primary">
+                                <i class="fas fa-eye"></i>
+                            </a>
+                        </li>
+                        {% empty %}
+                        <li class="list-group-item">Aucun comportement récent</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row mt-4">
+        <!-- Matrice de relation Client/Produit -->
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Matrice Comportementale: Clients / Produits</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <div id="matrixContainer"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row mt-4">
+        <!-- Catégories clients par nombre de comportements -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Comportements par Catégorie Client</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="clientCategoryChart" height="300"></canvas>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Catégories produits par nombre de comportements -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Comportements par Catégorie Produit</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="productCategoryChart" height="300"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row mt-4">
+        <!-- Comportements les plus courants -->
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Types de Comportements les Plus Courants</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-8">
+                            <canvas id="commonBehaviorsChart" height="250"></canvas>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="behavior-list mt-3">
+                                {% for behavior, count in common_behaviors %}
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <div class="behavior-pill" style="background-color: {% cycle '#3498db' '#e74c3c' '#2ecc71' '#f39c12' '#9b59b6' %};">
+                                        {{ behavior }}
+                                    </div>
+                                    <span class="badge bg-secondary">{{ count }}</span>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Charger les données pour les graphiques
+        fetch('{% url "behavior_data_api" %}')
+            .then(response => response.json())
+            .then(data => {
+                renderMatrix(data.matrix_data);
+                renderRelationshipDiagram();
+            });
+        
+        // Graphique pour les catégories clients
+        const clientCategoryData = {
+            labels: [{% for id, label, count in client_behavior_counts %}'{{ label }}'{% if not forloop.last %}, {% endif %}{% endfor %}],
+            datasets: [{
+                label: 'Nombre de comportements',
+                data: [{% for id, label, count in client_behavior_counts %}{{ count }}{% if not forloop.last %}, {% endif %}{% endfor %}],
+                backgroundColor: [
+                    'rgba(52, 152, 219, 0.7)',
+                    'rgba(46, 204, 113, 0.7)',
+                    'rgba(155, 89, 182, 0.7)',
+                    'rgba(241, 196, 15, 0.7)',
+                    'rgba(230, 126, 34, 0.7)'
+                ],
+                borderColor: [
+                    'rgba(52, 152, 219, 1)',
+                    'rgba(46, 204, 113, 1)',
+                    'rgba(155, 89, 182, 1)',
+                    'rgba(241, 196, 15, 1)',
+                    'rgba(230, 126, 34, 1)'
+                ],
+                borderWidth: 1
+            }]
+        };
+        
+        const clientCategoryChart = new Chart(
+            document.getElementById('clientCategoryChart'),
+            {
+                type: 'bar',
+                data: clientCategoryData,
+                options: {
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return `${context.parsed.y} comportements`;
+                                }
+                            }
+                        }
+                    },
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            }
+        );
+        
+        // Graphique pour les catégories produits
+        const productCategoryData = {
+            labels: [{% for id, label, count in product_behavior_counts %}'{{ label }}'{% if not forloop.last %}, {% endif %}{% endfor %}],
+            datasets: [{
+                label: 'Nombre de comportements',
+                data: [{% for id, label, count in product_behavior_counts %}{{ count }}{% if not forloop.last %}, {% endif %}{% endfor %}],
+                backgroundColor: [
+                    'rgba(231, 76, 60, 0.7)',
+                    'rgba(142, 68, 173, 0.7)',
+                    'rgba(243, 156, 18, 0.7)',
+                    'rgba(39, 174, 96, 0.7)',
+                    'rgba(41, 128, 185, 0.7)'
+                ],
+                borderColor: [
+                    'rgba(231, 76, 60, 1)',
+                    'rgba(142, 68, 173, 1)',
+                    'rgba(243, 156, 18, 1)',
+                    'rgba(39, 174, 96, 1)',
+                    'rgba(41, 128, 185, 1)'
+                ],
+                borderWidth: 1
+            }]
+        };
+        
+        const productCategoryChart = new Chart(
+            document.getElementById('productCategoryChart'),
+            {
+                type: 'bar',
+                data: productCategoryData,
+                options: {
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return `${context.parsed.y} comportements`;
+                                }
+                            }
+                        }
+                    },
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            }
+        );
+        
+        // Graphique pour les comportements communs
+        const commonBehaviorsData = {
+            labels: [{% for behavior, count in common_behaviors %}'{{ behavior }}'{% if not forloop.last %}, {% endif %}{% endfor %}],
+            datasets: [{
+                label: 'Fréquence',
+                data: [{% for behavior, count in common_behaviors %}{{ count }}{% if not forloop.last %}, {% endif %}{% endfor %}],
+                backgroundColor: [
+                    'rgba(52, 152, 219, 0.7)',
+                    'rgba(231, 76, 60, 0.7)',
+                    'rgba(46, 204, 113, 0.7)',
+                    'rgba(243, 156, 18, 0.7)',
+                    'rgba(155, 89, 182, 0.7)'
+                ],
+                borderColor: [
+                    'rgba(52, 152, 219, 1)',
+                    'rgba(231, 76, 60, 1)',
+                    'rgba(46, 204, 113, 1)',
+                    'rgba(243, 156, 18, 1)',
+                    'rgba(155, 89, 182, 1)'
+                ],
+                borderWidth: 1
+            }]
+        };
+        
+        const commonBehaviorsChart = new Chart(
+            document.getElementById('commonBehaviorsChart'),
+            {
+                type: 'pie',
+                data: commonBehaviorsData,
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'right'
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return `${context.label}: ${context.raw} occurences`;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        );
+        
+        // Fonction pour rendre la matrice des comportements
+        function renderMatrix(matrixData) {
+            const container = document.getElementById('matrixContainer');
+            
+            // Créer le tableau HTML
+            let table = document.createElement('table');
+            table.className = 'table table-bordered';
+            
+            // En-tête du tableau (produits)
+            let thead = document.createElement('thead');
+            let headerRow = document.createElement('tr');
+            
+            // Cellule vide dans le coin supérieur gauche
+            let cornerCell = document.createElement('th');
+            cornerCell.textContent = 'Client / Produit';
+            headerRow.appendChild(cornerCell);
+            
+            // Obtenir tous les produits uniques
+            const allProducts = [];
+            if (matrixData.length > 0) {
+                matrixData[0].products.forEach(product => {
+                    allProducts.push({
+                        id: product.product_id,
+                        name: product.product_name
+                    });
+                });
+            }
+            
+            // Ajouter les en-têtes de produit
+            allProducts.forEach(product => {
+                let th = document.createElement('th');
+                th.textContent = product.name;
+                th.setAttribute('data-product-id', product.id);
+                headerRow.appendChild(th);
+            });
+            
+            thead.appendChild(headerRow);
+            table.appendChild(thead);
+            
+            // Corps du tableau (clients et comportements)
+            let tbody = document.createElement('tbody');
+            
+            matrixData.forEach(clientRow => {
+                let tr = document.createElement('tr');
+                
+                // En-tête de ligne (client)
+                let th = document.createElement('th');
+                th.textContent = clientRow.client_name;
+                th.setAttribute('data-client-id', clientRow.client_id);
+                tr.appendChild(th);
+                
+                // Cellules de comportement
+                clientRow.products.forEach(productData => {
+                    let td = document.createElement('td');
+                    td.className = 'matrix-cell';
+                    
+                    if (productData.count > 0) {
+                        // Style de la cellule basé sur le nombre de comportements
+                        const intensity = Math.min(0.8, 0.3 + (productData.count / 10 * 0.5));
+                        td.style.backgroundColor = `rgba(52, 152, 219, ${intensity})`;
+                        
+                        // Contenu de la cellule
+                        td.innerHTML = `
+                            <div class="text-center">
+                                <strong>${productData.count}</strong>
+                                <div class="small text-white">${productData.common_behavior || 'N/A'}</div>
+                            </div>
+                        `;
+                        
+                        // Ajouter des attributs de données pour les filtres et les liens
+                        td.setAttribute('data-client-id', clientRow.client_id);
+                        td.setAttribute('data-product-id', productData.product_id);
+                        td.setAttribute('data-count', productData.count);
+                        td.setAttribute('data-behavior', productData.common_behavior || '');
+                        
+                        // Ajouter un événement clic pour naviguer vers les détails
+                        td.style.cursor = 'pointer';
+                        td.addEventListener('click', function() {
+                            window.location.href = `/client-category/${clientRow.client_id}/`;
+                        });
+                    } else {
+                        td.style.backgroundColor = '#f8f9fa';
+                        td.innerHTML = '<div class="text-center text-muted">-</div>';
+                    }
+                    
+                    tr.appendChild(td);
+                });
+                
+                tbody.appendChild(tr);
+            });
+            
+            table.appendChild(tbody);
+            container.appendChild(table);
+        }
+        
+        // Fonction pour rendre le diagramme de relations
+        function renderRelationshipDiagram() {
+            const width = document.getElementById('relationshipDiagram').clientWidth;
+            const height = 400;
+            
+            // Données pour le diagramme
+            const nodes = [
+                { id: "client", name: "Catégorie Client", group: 1 },
+                { id: "product", name: "Catégorie Produit", group: 2 },
+                { id: "crm", name: "Comportement CRM", group: 3 }
+            ];
+            
+            const links = [
+                { source: "client", target: "crm", value: 1 },
+                { source: "product", target: "crm", value: 1 }
+            ];
+            
+            // Créer le SVG
+            const svg = d3.select("#relationshipDiagram")
+                .append("svg")
+                .attr("width", width)
+                .attr("height", height);
+            
+            // Définir les forces pour la simulation
+            const simulation = d3.forceSimulation(nodes)
+                .force("link", d3.forceLink(links).id(d => d.id).distance(150))
+                .force("charge", d3.forceManyBody().strength(-400))
+                .force("center", d3.forceCenter(width / 2, height / 2));
+            
+            // Définir des marqueurs de flèche
+            svg.append("defs").selectAll("marker")
+                .data(["arrow"])
+                .enter().append("marker")
+                .attr("id", "arrow")
+                .attr("viewBox", "0 -5 10 10")
+                .attr("refX", 15)
+                .attr("refY", 0)
+                .attr("markerWidth", 6)
+                .attr("markerHeight", 6)
+                .attr("orient", "auto")
+                .append("path")
+                .attr("d", "M0,-5L10,0L0,5")
+                .attr("fill", "#999");
+            
+            // Créer les liens
+            const link = svg.append("g")
+                .selectAll("path")
+                .data(links)
+                .enter().append("path")
+                .attr("stroke", "#999")
+                .attr("stroke-opacity", 0.6)
+                .attr("stroke-width", d => Math.sqrt(d.value) * 2)
+                .attr("marker-end", "url(#arrow)")
+                .attr("fill", "none");
+            
+            // Créer les groupes de nœuds
+            const node = svg.append("g")
+                .selectAll("g")
+                .data(nodes)
+                .enter().append("g")
+                .call(d3.drag()
+                    .on("start", dragstarted)
+                    .on("drag", dragged)
+                    .on("end", dragended));
+            
+            // Ajouter des cercles colorés pour chaque nœud
+            node.append("circle")
+                .attr("r", 25)
+                .attr("fill", d => {
+                    const colors = {
+                        1: "#3498db", // Client
+                        2: "#e74c3c", // Produit
+                        3: "#2ecc71"  // CRM
+                    };
+                    return colors[d.group];
+                });
+            
+            // Ajouter du texte à chaque nœud
+            node.append("text")
+                .attr("text-anchor", "middle")
+                .attr("dy", ".35em")
+                .attr("fill", "white")
+                .text(d => {
+                    const labels = {
+                        "client": "Client",
+                        "product": "Produit",
+                        "crm": "CRM"
+                    };
+                    return labels[d.id];
+                });
+            
+            // Ajouter des textes descriptifs
+            node.append("title")
+                .text(d => d.name);
+            
+            // Ajouter des libellés aux liens (attributs)
+            svg.append("g")
+                .selectAll("text")
+                .data(links)
+                .enter().append("text")
+                .attr("font-size", 10)
+                .attr("text-anchor", "middle")
+                .attr("dy", -5)
+                .attr("fill", "#666")
+                .text(d => {
+                    const descriptions = {
+                        "client-crm": "idClient",
+                        "product-crm": "idProduct"
+                    };
+                    return descriptions[`${d.source.id}-${d.target.id}`] || "";
+                });
+            
+            // Fonction pour mettre à jour la position des éléments à chaque tick de la simulation
+            simulation.on("tick", () => {
+                link.attr("d", d => {
+                    const dx = d.target.x - d.source.x;
+                    const dy = d.target.y - d.source.y;
+                    const dr = Math.sqrt(dx * dx + dy * dy);
+                    return `M${d.source.x},${d.source.y}A${dr},${dr} 0 0,1 ${d.target.x},${d.target.y}`;
+                });
+                
+                node.attr("transform", d => `translate(${d.x},${d.y})`);
+                
+                // Mettre à jour la position des textes de lien
+                svg.selectAll("text")
+                    .filter(d => d.source && d.target)
+                    .attr("x", d => (d.source.x + d.target.x) / 2)
+                    .attr("y", d => (d.source.y + d.target.y) / 2);
+            });
+            
+            // Fonctions pour le glisser-déposer
+            function dragstarted(event, d) {
+                if (!event.active) simulation.alphaTarget(0.3).restart();
+                d.fx = d.x;
+                d.fy = d.y;
+            }
+            
+            function dragged(event, d) {
+                d.fx = event.x;
+                d.fy = event.y;
+            }
+            
+            function dragended(event, d) {
+                if (!event.active) simulation.alphaTarget(0);
+                d.fx = null;
+                d.fy = null;
+            }
+            
+            // Boutons de zoom
+            document.getElementById('zoomIn').addEventListener('click', function() {
+                const currentScale = svg.node().__zoom ? svg.node().__zoom.k : 1;
+                svg.transition()
+                    .duration(300)
+                    .call(zoom.scaleBy, 1.3);
+            });
+            
+            document.getElementById('zoomOut').addEventListener('click', function() {
+                const currentScale = svg.node().__zoom ? svg.node().__zoom.k : 1;
+                svg.transition()
+                    .duration(300)
+                    .call(zoom.scaleBy, 0.7);
+            });
+            
+            document.getElementById('resetZoom').addEventListener('click', function() {
+                svg.transition()
+                    .duration(300)
+                    .call(zoom.transform, d3.zoomIdentity);
+            });
+            
+            // Ajouter le comportement de zoom
+            const zoom = d3.zoom()
+                .scaleExtent([0.1, 4])
+                .on("zoom", function(event) {
+                    svg.selectAll("g").attr("transform", event.transform);
+                });
+            
+            svg.call(zoom);
+        }
+    });
+</script>
+{% endblock %}

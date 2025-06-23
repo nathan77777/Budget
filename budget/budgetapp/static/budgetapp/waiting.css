@@ -1,0 +1,227 @@
+
+:root {
+    --primary: #2563eb;
+    --success: #10b981;
+    --danger: #ef4444;
+    --warning: #f59e0b;
+    --secondary: #6b7280;
+    --light-bg: #f3f4f6;
+}
+
+body {
+    background-color: var(--light-bg);
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.page-header {
+    background: linear-gradient(135deg, var(--primary), #1e40af);
+    color: white;
+    padding: 2rem 0;
+    margin-bottom: 2rem;
+    border-radius: 0 0 1rem 1rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.card {
+    border: none;
+    border-radius: 0.75rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    transition: transform 0.2s, box-shadow 0.2s;
+    margin-bottom: 1.5rem;
+}
+
+.card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1);
+}
+
+.card-header {
+    border-radius: 0.75rem 0.75rem 0 0 !important;
+    font-weight: 600;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.badge-count {
+    background: rgba(255, 255, 255, 0.3);
+    padding: 0.25rem 0.75rem;
+    border-radius: 1rem;
+    font-size: 0.85rem;
+}
+
+.list-group-item {
+    border-left: none;
+    border-right: none;
+    padding: 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.list-group-item:hover {
+    background-color: rgba(0, 0, 0, 0.02);
+}
+
+.item-details {
+    flex-grow: 1;
+}
+
+.item-title {
+    font-weight: 500;
+    margin-bottom: 0.25rem;
+}
+
+.item-info {
+    color: #6b7280;
+    display: flex;
+    gap: 1rem;
+    font-size: 0.9rem;
+}
+
+.accept-btn {
+    padding: 0.4rem 0.75rem;
+    border-radius: 0.5rem;
+    color: white;
+    border: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.2s;
+    font-weight: 500;
+    font-size: 0.9rem;
+}
+
+.accept-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 3px 5px rgba(0, 0, 0, 0.1);
+}
+
+.btn-primary {
+    background-color: var(--primary);
+}
+
+.btn-success {
+    background-color: var(--success);
+}
+
+.btn-danger {
+    background-color: var(--danger);
+}
+
+.btn-warning {
+    background-color: var(--warning);
+}
+
+.btn-secondary {
+    background-color: var(--secondary);
+}
+
+.empty-list {
+    padding: 2rem;
+    text-align: center;
+    color: #6b7280;
+    font-style: italic;
+}
+
+.card-actions {
+    padding: 0.75rem;
+    background-color: #f9fafb;
+    border-top: 1px solid rgba(0, 0, 0, 0.05);
+    border-radius: 0 0 0.75rem 0.75rem;
+    display: flex;
+    justify-content: flex-end;
+}
+
+.tab-container {
+    background-color: white;
+    border-radius: 0.75rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    margin-bottom: 2rem;
+    overflow: hidden;
+}
+
+.nav-tabs {
+    border-bottom: none;
+    background-color: #f9fafb;
+}
+
+.nav-link {
+    color: #4b5563;
+    font-weight: 500;
+    padding: 1rem 1.5rem;
+    border: none;
+    border-radius: 0;
+}
+
+.nav-link.active {
+    color: var(--primary);
+    background-color: white;
+    border-bottom: 3px solid var(--primary);
+}
+
+.tab-content {
+    padding: 1.5rem;
+}
+
+.form-check-input {
+    width: 1.2rem;
+    height: 1.2rem;
+}
+
+.accept-all-btn {
+    margin-left: 1rem;
+}
+
+.montant-badge {
+    font-weight: 600;
+    padding: 0.35rem 0.75rem;
+    border-radius: 1rem;
+    font-size: 0.85rem;
+}
+
+.montant-recette {
+    background-color: rgba(16, 185, 129, 0.1);
+    color: var(--success);
+}
+
+.montant-depense {
+    background-color: rgba(239, 68, 68, 0.1);
+    color: var(--danger);
+}
+
+.search-container {
+    margin-bottom: 1.5rem;
+}
+
+.filter-dropdown {
+    position: relative;
+}
+
+.category-label {
+    display: inline-block;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+    font-size: 0.75rem;
+    margin-right: 0.5rem;
+    background-color: #e5e7eb;
+    color: #374151;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .item-info {
+        flex-direction: column;
+        gap: 0.25rem;
+    }
+
+    .list-group-item {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .item-actions {
+        margin-top: 1rem;
+        align-self: flex-end;
+    }
+}

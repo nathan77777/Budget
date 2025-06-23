@@ -50,15 +50,20 @@
 </script>
 
 {% if request.session.role.execute %}
-    <p><a href="/waiting/{{ dept_no }}">Fil d'attente</a></p>
+    <p><a href="/waiting/{{ dept_no }}">En attente</a></p>
 {% endif %}
 
-<a href="{% url 'budget_pdf' dept_no=dept_no year=year %}" target="_blank">
+<p><a href="{% url 'budget_pdf' dept_no=dept_no year=year %}" target="_blank">
     Télécharger le PDF
-</a>
-<a href="{% url 'export_budget_csv' %}?dept_no={{ dept_no }}&year={{ year }}" target="_blank">
+</a></p>
+<p><a href="{% url 'export_budget_csv' %}?dept_no={{ dept_no }}&year={{ year }}" target="_blank">
     Télécharger le CSV
 </a>
+</p>
+<p><a href="{% url 'home_retour' %}" target="_blank">
+    Page d'accueil
+</a>
+</p>
 
 
 

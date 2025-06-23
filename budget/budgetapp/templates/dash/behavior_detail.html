@@ -1,0 +1,251 @@
+{% extends 'base.html' %}
+
+{% block title %}Comportement #{{ behavior.idCRM }} - Détail{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4">
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Tableau de bord</a></li>
+            {% if client_category %}
+            <li class="breadcrumb-item">
+                <a href="{% url 'client_category_detail' client_category.idClient %}">
+                    {{ client_category.Libelle }}
+                </a>
+            </li>
+            {% endif %}
+            {% if product_category %}
+            <li class="breadcrumb-item">
+                <a href="{% url 'product_category_detail' product_category.idCategorie %}">
+                    {{ product_category.Libelle }}
+                </a>
+            </li>
+            {% endif %}
+            <li class="breadcrumb-item active">Comportement #{{ behavior.idCRM }}</li>
+        </ol>
+    </nav>
+
+    <div class="entity-relation card bg-info text-white mb-4">
+        <div class="card-body text-center">
+            <h2 class="mb-0">
+                <i class="fas fa-exchange-alt me-2"></i> {{ behavior.libelle }}
+            </h2>
+            <p class="mb-0">Comportement enregistré le {{ behavior.dateCRM|date:"d/m/Y" }}</p>
+        </div>
+    </div>
+    
+    <!-- Détails du comportement -->
+    <div class="row">
+        <div class="col-lg-6">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Informations Générales</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table">
+                        <tbody>
+                            <tr>
+                                <th width="30%">ID Comportement</th>
+                                <td><span class="badge bg-info text-white">{{ behavior.idCRM }}</span></td>
+                            </tr>
+                            <tr>
+                                <th>Type</th>
+                                <td><span class="behavior-pill">{{ behavior.libelle }}</span></td>
+                            </tr>
+                            <tr>
+                                <th>Date</th>
+                                <td>{{ behavior.dateCRM|date:"d/m/Y" }}</td>
+                            </tr>
+                            <tr>
+                                <th>Description</th>
+                                <td>{{ behavior.descComportement }}</td>
+                            </tr>
+                            <tr>
+                                <th>Montant</th>
+                                <td>{% if behavior.montant %}<span class="text-success fw-bold">{{ behavior.montant }}€</span>{% else %}Non applicable{% endif %}</td>
+                            </tr>
+                            <tr>
+                                <th>Statut</th>
+                                <td>
+                                    {% if behavior.isValid %}
+                                    <span class="badge bg-success">Validé</span>
+                                    {% else %}
+                                    <span class="badge bg-warning text-dark">En attente de validation</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-6">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Relations</h5>
+                </div>
+                <div class="card-body">
+                    <div class="relation-diagram">
+                        <div class="relation-circle client-circle">
+                            {% if client_category %}
+                            <i class="fas fa-users mb-2"></i>
+                            <h6>Client</h6>
+                            <a href="{% url 'client_category_detail' client_category.idClient %}" class="stretched-link">
+                                {{ client_category.Libelle }}
+                            </a>
+                            {% else %}
+                            <i class="fas fa-question mb-2"></i>
+                            <h6>Client Inconnu</h6>
+                            <p class="mb-0">ID: {{ behavior.idClient }}</p>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="relation-arrow">
+                            <i class="fas fa-long-arrow-alt-right"></i>
+                        </div>
+                        
+                        <div class="relation-circle behavior-circle">
+                            <i class="fas fa-exchange-alt mb-2"></i>
+                            <h6>Comportement</h6>
+                            <p class="mb-0">{{ behavior.libelle }}</p>
+                        </div>
+                        
+                        <div class="relation-arrow">
+                            <i class="fas fa-long-arrow-alt-right"></i>
+                        </div>
+                        
+                        <div class="relation-circle product-circle">
+                            {% if product_category %}
+                            <i class="fas fa-box mb-2"></i>
+                            <h6>Produit</h6>
+                            <a href="{% url 'product_category_detail' product_category.idCategorie %}" class="stretched-link">
+                                {{ product_category.Libelle }}
+                            </a>
+                            {% else %}
+                            <i class="fas fa-question mb-2"></i>
+                            <h6>Produit Inconnu</h6>
+                            <p class="mb-0">ID: {{ behavior.idProduct }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Comportements similaires -->
+    <div class="card mb-4">
+        <div class="card-header bg-info text-white">
+            <h5 class="mb-0">Comportements Similaires</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Date</th>
+                            <th>Comportement</th>
+                            <th>Description</th>
+                            <th>Montant</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for similar in similar_behaviors %}
+                        <tr>
+                            <td>{{ similar.idCRM }}</td>
+                            <td>{{ similar.dateCRM|date:"d/m/Y" }}</td>
+                            <td><span class="badge-behavior">{{ similar.libelle }}</span></td>
+                            <td>{{ similar.descComportement }}</td>
+                            <td>{% if similar.montant %}{{ similar.montant }}€{% else %}N/A{% endif %}</td>
+                            <td>
+                                <a href="{% url 'behavior_detail' similar.idCRM %}" class="btn btn-sm btn-outline-info">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="text-center">Aucun comportement similaire trouvé</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Analyse contextuelle -->
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0">Analyse Contextuelle</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="insight-card">
+                        <div class="insight-icon">
+                            <i class="fas fa-lightbulb"></i>
+                        </div>
+                        <div class="insight-content">
+                            <h6>Contexte Client</h6>
+                            <p>
+                                {% if client_category %}
+                                Les clients de type <strong>{{ client_category.Libelle }}</strong> démontrent généralement 
+                                un intérêt pour ce type de comportement lorsqu'ils interagissent avec 
+                                {% if product_category %}{{ product_category.Libelle }}{% else %}ce produit{% endif %}.
+                                {% else %}
+                                Aucune information contextuelle disponible pour ce client.
+                                {% endif %}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-6">
+                    <div class="insight-card">
+                        <div class="insight-icon">
+                            <i class="fas fa-chart-line"></i>
+                        </div>
+                        <div class="insight-content">
+                            <h6>Impact Commercial</h6>
+                            <p>
+                                {% if behavior.montant %}
+                                Ce comportement a généré un impact financier direct de <strong>{{ behavior.montant }}€</strong>,
+                                {% if behavior.montant > 100 %}ce qui représente une transaction significative{% else %}dans la gamme des transactions standard{% endif %}.
+                                {% else %}
+                                Ce comportement n'a pas d'impact financier direct mesurable, mais contribue à l'analyse des tendances client.
+                                {% endif %}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // JavaScript supplémentaire pour la page de détail comportement
+    document.addEventListener('DOMContentLoaded', function() {
+        // Animation des cartes d'insight au défilement
+        const insightCards = document.querySelectorAll('.insight-card');
+        
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('insight-card-visible');
+                }
+            });
+        }, { threshold: 0.1 });
+        
+        insightCards.forEach(card => {
+            observer.observe(card);
+        });
+    });
+</script>
+{% endblock %}

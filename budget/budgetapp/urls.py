@@ -20,4 +20,25 @@ urlpatterns = [
     path('categories-et-comportements/', views.page_categorie_et_comportement, name='categories_et_comportements'),
     path('graphe/', views.graphe_realisations, name='graphe_realisations'),
     path('export-pdf/', views.export_pdf, name='export_pdf'),
+
+    path('accept-multiple/<int:type>/<int:cat_type>/', views.accept_multiple, name='accept_multiple'),
+
+    # ----------------------------------------------------------------------
+
+    path('dash', views.dashboard, name='dashboard'),
+    path('home', views.home, name='home_retour'),
+    # Vue détaillée pour une catégorie client spécifique
+    path('client-category/<int:category_id>/', views.client_category_detail, name='client_category_detail'),
+
+    # Vue détaillée pour une catégorie produit spécifique
+    path('product-category/<int:category_id>/', views.product_category_detail, name='product_category_detail'),
+
+    # Vue détaillée pour un comportement client spécifique
+    path('behavior/<int:crm_id>/', views.behavior_detail, name='behavior_detail'),
+
+    # API pour récupérer les données pour les graphiques en JavaScript
+    path('api/behavior-data/', views.behavior_data_api, name='behavior_data_api'),
+
+    path('import', views.import_csv_view, name='import'),
+
 ]

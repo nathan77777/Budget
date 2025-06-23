@@ -1,202 +1,554 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8">
-  <title>Liste d'attente - Département {{ deptno }}</title>
-  <!-- Inclusion de Bootstrap via CDN -->
-  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Liste d'attente - Département {{ deptno }}</title>
+    <!-- Font Awesome pour les icônes -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <!-- Bootstrap 5 pour un design plus moderne -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.1.3/css/bootstrap.min.css">
+    
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'budgetapp/waiting.css' %}">
+    
 </head>
+
 <body>
-<style>
-    /* Bouton "Accept" personnalisé */
-a button {
-  background-color: #007bff; /* Couleur de base */
-  border: none;
-  color: #fff;
-  padding: 6px 12px;
-  font-size: 0.9em;
-  border-radius: 4px;
-  transition: background-color 0.3s ease;
-}
-a button:hover {
-  background-color: #0056b3;
-}
+<div class="page-header">
+    <div class="container">
+        <h1 class="mb-2">Liste d'attente</h1>
+        <p class="mb-0">Département {{ deptno }} - Validation des opérations</p>
+    </div>
+</div>
 
-/* Centrage et style des entêtes de cartes */
-.card-header {
-  font-size: 1.2em;
-  text-align: center;
-}
-
-/* Espacement des titres de section */
-h1, h2 {
-  text-align: center;
-  margin-bottom: 20px;
-}
-
-/* Ajustement des éléments de liste dans les cartes */
-.list-group-item {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  justify-content: center;
-  padding: 10px 15px;
-}
-.list-group-item strong {
-  font-size: 1.1em;
-  margin-bottom: 5px;
-}
-.list-group-item small {
-  font-size: 0.9em;
-  color: #555;
-  margin-bottom: 8px;
-}
-
-/* Positionnement du bouton "Accept" dans la liste */
-.list-group-item a {
-  align-self: flex-end;
-}
-
-/* Responsive : adaptation pour les petits écrans */
-@media (min-width: 768px) {
-  .list-group-item {
-    flex-direction: row;
-    justify-content: space-between;
-    align-items: center;
-  }
-  .list-group-item a {
-    align-self: center;
-  }
-}
-
-</style>
-  <div class="container mt-5">
-    <h1 class="mb-4">Liste d'attente pour le département {{ deptno }}</h1>
-  
-    <!-- Affichage des messages -->
+<div class="container mb-5">
+    <!-- Messages d'alerte -->
     {% if messages %}
-      {% for message in messages %}
-        <div class="alert alert-info" role="alert">
-          {{ message }}
-        </div>
-      {% endfor %}
+        {% for message in messages %}
+            <div class="alert alert-info alert-dismissible fade show mb-4" role="alert">
+                <i class="fas fa-info-circle me-2"></i> {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        {% endfor %}
     {% endif %}
-    
-    <!-- Section Prévisions -->
-    <h2>Prévisions</h2>
-    <div class="row">
-      <!-- Recettes Prévisions -->
-      <div class="col-md-6">
-        <div class="card mb-3">
-          <div class="card-header bg-primary text-white">
-            Recettes Prévisions
-          </div>
-          <ul class="list-group list-group-flush">
-            {% for item in recette_previsions_waiting %}
-              <li class="list-group-item">
-                <strong>{{ item.libelle }}</strong><br>
-                <!-- Remplacez 'some_field' par le champ pertinent -->
-                <small>Montant: ${{ item.montant|default:"Aucune information supplémentaire" }}</small>
-                <a href="/accept/1/{{ item.id_prevision }}"><button>Accept</button></a>
-              </li>
-            {% empty %}
-              <li class="list-group-item"><em>Aucune recette prévision en attente.</em></li>
-            {% endfor %}
-          </ul>
+
+    <!-- Barre de recherche et filtres -->
+    <div class="search-container">
+        <div class="row">
+            <div class="col-md-8">
+                <div class="input-group">
+            <span class="input-group-text bg-white">
+              <i class="fas fa-search text-muted"></i>
+            </span>
+                    <input type="text" class="form-control" id="searchInput" placeholder="Rechercher...">
+                    <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                        Filtres
+                    </button>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="#" data-filter="all">Tous</a></li>
+                        <li><a class="dropdown-item" href="#" data-filter="recettes">Recettes uniquement</a></li>
+                        <li><a class="dropdown-item" href="#" data-filter="depenses">Dépenses uniquement</a></li>
+                        <li>
+                            <hr class="dropdown-divider">
+                        </li>
+                        <li><a class="dropdown-item" href="#" data-filter="montant-asc">Montant croissant</a></li>
+                        <li><a class="dropdown-item" href="#" data-filter="montant-desc">Montant décroissant</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="d-flex justify-content-end">
+                    <button class="btn btn-success" id="acceptAllBtn">
+                        <i class="fas fa-check-double me-2"></i> Tout accepter
+                    </button>
+                </div>
+                <div class="btn-group">
+                    <a href="{% url 'home_retour' %}">
+                        <button type="button" class="btn btn-primary" id="toggleView">
+                            <i class="fas fa-th-large"></i> Retour vers Accueil
+                        </button>
+                    </a>
+                </div>
+            </div>
         </div>
-      </div>
-      
-      <!-- Dépenses Prévisions -->
-      <div class="col-md-6">
-        <div class="card mb-3">
-          <div class="card-header bg-danger text-white">
-            Dépenses Prévisions
-          </div>
-          <ul class="list-group list-group-flush">
-            {% for item in expense_previsions_waiting %}
-              <li class="list-group-item">
-                <strong>{{ item.libelle }}</strong><br>
-                <small>Montant: ${{ item.montant|default:"Aucune information supplémentaire" }}</small>
-                <a href="/accept/1/{{ item.id_prevision }}"><button>Accept</button></a>
-              </li>
-            {% empty %}
-              <li class="list-group-item"><em>Aucune dépense prévision en attente.</em></li>
-            {% endfor %}
-          </ul>
-        </div>
-      </div>
     </div>
-    
-    <!-- Section Réalisations -->
-    <h2>Réalisations</h2>
-    <div class="row">
-      <!-- Recettes Réalisations -->
-      <div class="col-md-6">
-        <div class="card mb-3">
-          <div class="card-header bg-success text-white">
-            Recettes Réalisations
-          </div>
-          <ul class="list-group list-group-flush">
-            {% for item in recette_realisations_waiting %}
-              <li class="list-group-item">
-                <strong>{{ item.libelle }}</strong><br>
-                <small>Montant: ${{ item.montant|default:"Aucune information supplémentaire" }}</small>
-              <a href="/accept/2/{{ item.id_realisation }}"><button>Accept</button></a>
-              </li>
-            {% empty %}
-              <li class="list-group-item"><em>Aucune recette réalisation en attente.</em></li>
-            {% endfor %}
-          </ul>
+
+    <!-- Navigation par onglets -->
+    <div class="tab-container">
+        <ul class="nav nav-tabs" id="operationTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="previsions-tab" data-bs-toggle="tab" data-bs-target="#previsions"
+                        type="button" role="tab">
+                    <i class="fas fa-calendar-alt me-2"></i> Prévisions
+                    <span class="badge bg-primary rounded-pill ms-2">{{ recette_previsions_waiting|length|add:expense_previsions_waiting|length }}</span>
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="realisations-tab" data-bs-toggle="tab" data-bs-target="#realisations"
+                        type="button" role="tab">
+                    <i class="fas fa-check-circle me-2"></i> Réalisations
+                    <span class="badge bg-primary rounded-pill ms-2">{{ recette_realisations_waiting|length|add:expense_realisations_waiting|length }}</span>
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="crm-tab" data-bs-toggle="tab" data-bs-target="#crm-content" type="button"
+                        role="tab">
+                    <i class="fas fa-users me-2"></i> CRM
+                    <span class="badge bg-primary rounded-pill ms-2">{{ crm|length }}</span>
+                </button>
+            </li>
+        </ul>
+        <div class="tab-content" id="operationTabsContent">
+            <!-- Onglet Prévisions -->
+            <div class="tab-pane fade show active" id="previsions" role="tabpanel">
+                <div class="row">
+                    <!-- Recettes Prévisions -->
+                    <div class="col-lg-6">
+                        <div class="card">
+                            <div class="card-header bg-success text-white">
+                                <div>
+                                    <i class="fas fa-arrow-down me-2"></i> Recettes Prévisions
+                                </div>
+                                <div class="badge-count">{{ recette_previsions_waiting|length }}</div>
+                            </div>
+                            <div class="list-group list-group-flush">
+                                <form id="recettePrevisionsForm" action="/accept-multiple/1/1/" method="post">
+                                    {% csrf_token %}
+                                    {% for item in recette_previsions_waiting %}
+                                        <div class="list-group-item">
+                                            <div class="form-check me-3">
+                                                <input class="form-check-input" type="checkbox" name="selected_items"
+                                                       value="{{ item.id_prevision }}"
+                                                       id="recettePrev{{ item.id_prevision }}">
+                                            </div>
+                                            <div class="item-details">
+                                                <div class="item-title">{{ item.libelle }}</div>
+                                                <div class="item-info">
+                                                    <span><i
+                                                            class="far fa-calendar me-1"></i> {{ item.date_operation|date:"d/m/Y" }}</span>
+                                                    <span class="montant-badge montant-recette">{{ item.montant|floatformat:2 }} €</span>
+                                                    {% if item.id_category %}
+                                                        <span class="category-label">{{ item.id_category }}</span>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                            <div class="item-actions">
+                                                <a href="/accept/1/{{ item.id_prevision }}">
+                                                    <button type="button" class="accept-btn btn-success">
+                                                        <i class="fas fa-check"></i> Accepter
+                                                    </button>
+                                                </a>
+                                            </div>
+                                        </div>
+                                    {% empty %}
+                                        <div class="empty-list">
+                                            <i class="fas fa-info-circle me-2"></i> Aucune recette prévision en attente.
+                                        </div>
+                                    {% endfor %}
+                                </form>
+                            </div>
+                            {% if recette_previsions_waiting %}
+                                <div class="card-actions">
+                                    <button form="recettePrevisionsForm" type="submit" class="btn btn-outline-success">
+                                        <i class="fas fa-check-double me-2"></i> Accepter la sélection
+                                    </button>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Dépenses Prévisions -->
+                    <div class="col-lg-6">
+                        <div class="card">
+                            <div class="card-header bg-danger text-white">
+                                <div>
+                                    <i class="fas fa-arrow-up me-2"></i> Dépenses Prévisions
+                                </div>
+                                <div class="badge-count">{{ expense_previsions_waiting|length }}</div>
+                            </div>
+                            <div class="list-group list-group-flush">
+                                <form id="depensePrevisionsForm" action="/accept-multiple/1/0/" method="post">
+                                    {% csrf_token %}
+                                    {% for item in expense_previsions_waiting %}
+                                        <div class="list-group-item">
+                                            <div class="form-check me-3">
+                                                <input class="form-check-input" type="checkbox" name="selected_items"
+                                                       value="{{ item.id_prevision }}"
+                                                       id="depensePrev{{ item.id_prevision }}">
+                                            </div>
+                                            <div class="item-details">
+                                                <div class="item-title">{{ item.libelle }}</div>
+                                                <div class="item-info">
+                                                    <span><i
+                                                            class="far fa-calendar me-1"></i> {{ item.date_operation|date:"d/m/Y" }}</span>
+                                                    <span class="montant-badge montant-depense">{{ item.montant|floatformat:2 }} €</span>
+                                                    {% if item.id_category %}
+                                                        <span class="category-label">{{ item.id_category }}</span>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                            <div class="item-actions">
+                                                <a href="/accept/1/{{ item.id_prevision }}">
+                                                    <button type="button" class="accept-btn btn-danger">
+                                                        <i class="fas fa-check"></i> Accepter
+                                                    </button>
+                                                </a>
+                                            </div>
+                                        </div>
+                                    {% empty %}
+                                        <div class="empty-list">
+                                            <i class="fas fa-info-circle me-2"></i> Aucune dépense prévision en attente.
+                                        </div>
+                                    {% endfor %}
+                                </form>
+                            </div>
+                            {% if expense_previsions_waiting %}
+                                <div class="card-actions">
+                                    <button form="depensePrevisionsForm" type="submit" class="btn btn-outline-danger">
+                                        <i class="fas fa-check-double me-2"></i> Accepter la sélection
+                                    </button>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Onglet Réalisations -->
+            <div class="tab-pane fade" id="realisations" role="tabpanel">
+                <div class="row">
+                    <!-- Recettes Réalisations -->
+                    <div class="col-lg-6">
+                        <div class="card">
+                            <div class="card-header bg-success text-white">
+                                <div>
+                                    <i class="fas fa-arrow-down me-2"></i> Recettes Réalisations
+                                </div>
+                                <div class="badge-count">{{ recette_realisations_waiting|length }}</div>
+                            </div>
+                            <div class="list-group list-group-flush">
+                                <form id="recetteRealisationsForm" action="/accept-multiple/2/1/" method="post">
+                                    {% csrf_token %}
+                                    {% for item in recette_realisations_waiting %}
+                                        <div class="list-group-item">
+                                            <div class="form-check me-3">
+                                                <input class="form-check-input" type="checkbox" name="selected_items"
+                                                       value="{{ item.id_realisation }}"
+                                                       id="recetteReal{{ item.id_realisation }}">
+                                            </div>
+                                            <div class="item-details">
+                                                <div class="item-title">{{ item.libelle }}</div>
+                                                <div class="item-info">
+                                                    <span><i
+                                                            class="far fa-calendar me-1"></i> {{ item.date_operation|date:"d/m/Y" }}</span>
+                                                    <span class="montant-badge montant-recette">{{ item.montant|floatformat:2 }} €</span>
+                                                    {% if item.id_category %}
+                                                        <span class="category-label">{{ item.id_category }}</span>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                            <div class="item-actions">
+                                                <a href="/accept/2/{{ item.id_realisation }}">
+                                                    <button type="button" class="accept-btn btn-success">
+                                                        <i class="fas fa-check"></i> Accepter
+                                                    </button>
+                                                </a>
+                                            </div>
+                                        </div>
+                                    {% empty %}
+                                        <div class="empty-list">
+                                            <i class="fas fa-info-circle me-2"></i> Aucune recette réalisation en
+                                            attente.
+                                        </div>
+                                    {% endfor %}
+                                </form>
+                            </div>
+                            {% if recette_realisations_waiting %}
+                                <div class="card-actions">
+                                    <button form="recetteRealisationsForm" type="submit"
+                                            class="btn btn-outline-success">
+                                        <i class="fas fa-check-double me-2"></i> Accepter la sélection
+                                    </button>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Dépenses Réalisations -->
+                    <div class="col-lg-6">
+                        <div class="card">
+                            <div class="card-header bg-danger text-white">
+                                <div>
+                                    <i class="fas fa-arrow-up me-2"></i> Dépenses Réalisations
+                                </div>
+                                <div class="badge-count">{{ expense_realisations_waiting|length }}</div>
+                            </div>
+                            <div class="list-group list-group-flush">
+                                <form id="depenseRealisationsForm" action="/accept-multiple/2/0/" method="post">
+                                    {% csrf_token %}
+                                    {% for item in expense_realisations_waiting %}
+                                        <div class="list-group-item">
+                                            <div class="form-check me-3">
+                                                <input class="form-check-input" type="checkbox" name="selected_items"
+                                                       value="{{ item.id_realisation }}"
+                                                       id="depenseReal{{ item.id_realisation }}">
+                                            </div>
+                                            <div class="item-details">
+                                                <div class="item-title">{{ item.libelle }}</div>
+                                                <div class="item-info">
+                                                    <span><i
+                                                            class="far fa-calendar me-1"></i> {{ item.date_operation|date:"d/m/Y" }}</span>
+                                                    <span class="montant-badge montant-depense">{{ item.montant|floatformat:2 }} €</span>
+                                                    {% if item.id_category %}
+                                                        <span class="category-label">{{ item.id_category }}</span>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                            <div class="item-actions">
+                                                <a href="/accept/2/{{ item.id_realisation }}">
+                                                    <button type="button" class="accept-btn btn-danger">
+                                                        <i class="fas fa-check"></i> Accepter
+                                                    </button>
+                                                </a>
+                                            </div>
+                                        </div>
+                                    {% empty %}
+                                        <div class="empty-list">
+                                            <i class="fas fa-info-circle me-2"></i> Aucune dépense réalisation en
+                                            attente.
+                                        </div>
+                                    {% endfor %}
+                                </form>
+                            </div>
+                            {% if expense_realisations_waiting %}
+                                <div class="card-actions">
+                                    <button form="depenseRealisationsForm" type="submit" class="btn btn-outline-danger">
+                                        <i class="fas fa-check-double me-2"></i> Accepter la sélection
+                                    </button>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Onglet CRM -->
+            <div class="tab-pane fade" id="crm-content" role="tabpanel">
+                <div class="row">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header bg-secondary text-white">
+                                <div>
+                                    <i class="fas fa-users me-2"></i> CRM
+                                </div>
+                                <div class="badge-count">{{ crm|length }}</div>
+                            </div>
+                            <div class="list-group list-group-flush">
+                                <form id="crmForm" action="/accept-multiple/3/0/" method="post">
+                                    {% csrf_token %}
+                                    {% for item in crm %}
+                                        <div class="list-group-item">
+                                            <div class="form-check me-3">
+                                                <input class="form-check-input" type="checkbox" name="selected_items"
+                                                       value="{{ item.idCRM }}" id="crm{{ item.idCRM }}">
+                                            </div>
+                                            <div class="item-details">
+                                                <div class="item-title">{{ item.libelle }}</div>
+                                                <div class="item-info">
+                                                    {% if item.montant %}
+                                                        <span class="montant-badge">{{ item.montant|floatformat:2 }} €</span>
+                                                    {% endif %}
+                                                    {% if item.date_creation %}
+                                                        <span><i
+                                                                class="far fa-calendar me-1"></i> {{ item.date_creation|date:"d/m/Y" }}</span>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                            <div class="item-actions">
+                                                <a href="/accept/3/{{ item.idCRM }}">
+                                                    <button type="button" class="accept-btn btn-secondary">
+                                                        <i class="fas fa-check"></i> Accepter
+                                                    </button>
+                                                </a>
+                                            </div>
+                                        </div>
+                                    {% empty %}
+                                        <div class="empty-list">
+                                            <i class="fas fa-info-circle me-2"></i> Aucune entrée CRM en attente.
+                                        </div>
+                                    {% endfor %}
+                                </form>
+                            </div>
+                            {% if crm %}
+                                <div class="card-actions">
+                                    <button form="crmForm" type="submit" class="btn btn-outline-secondary">
+                                        <i class="fas fa-check-double me-2"></i> Accepter la sélection
+                                    </button>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
-      </div>
-      
-      <!-- Dépenses Réalisations -->
-      <div class="col-md-6">
-        <div class="card mb-3">
-          <div class="card-header bg-warning text-white">
-            Dépenses Réalisations
-          </div>
-          <ul class="list-group list-group-flush">
-            {% for item in expense_realisations_waiting %}
-              <li class="list-group-item">
-                <strong>{{ item.libelle }}</strong><br>
-                <small>Montant: ${{ item.montant|default:"Aucune information supplémentaire" }}</small>
-                <a href="/accept/2/{{ item.id_realisation }}"><button>Accept</button></a>
-              </li>
-            {% empty %}
-              <li class="list-group-item"><em>Aucune dépense réalisation en attente.</em></li>
-            {% endfor %}
-          </ul>
-        </div>
-      </div>
-    
-        
-        <!-- CRM -->
-      <div class="col-md-6">
-        <div class="card mb-3">
-          <div class="card-header bg-secondary text-white">
-            CRM
-          </div>
-          <ul class="list-group list-group-flush">
-            {% for item in crm %}
-              <li class="list-group-item">
-                <strong>{{ item.libelle }}</strong><br>
-                <small>Montant: ${{ item.montant|default:"Aucune information supplémentaire" }}</small>
-                <a href="/accept/3/{{ item.idCRM }}"><button>Accept</button></a>
-              </li>
-            {% empty %}
-              <li class="list-group-item"><em>Aucune CRM.</em></li>
-            {% endfor %}
-          </ul>
-        </div>
-      </div>
-    
-    
     </div>
-  </div>
-  
-  <!-- Inclusion des scripts Bootstrap (optionnel) -->
-  <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.2/dist/js/bootstrap.bundle.min.js"></script>
+</div>
+
+<!-- Modal de confirmation pour acceptation multiple -->
+<div class="modal fade" id="confirmModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirmation</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                Êtes-vous sûr de vouloir accepter toutes les opérations sélectionnées ?
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                <button type="button" class="btn btn-primary" id="confirmAcceptBtn">Confirmer</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Scripts -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.1.3/js/bootstrap.bundle.min.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // Gestion de la recherche
+        const searchInput = document.getElementById('searchInput');
+        searchInput.addEventListener('keyup', function () {
+            const searchText = this.value.toLowerCase();
+            const listItems = document.querySelectorAll('.list-group-item:not(.empty-list)');
+
+            listItems.forEach(item => {
+                const itemText = item.textContent.toLowerCase();
+                if (itemText.includes(searchText)) {
+                    item.style.display = '';
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+        });
+
+        // Filtres
+        const filterLinks = document.querySelectorAll('[data-filter]');
+        filterLinks.forEach(link => {
+            link.addEventListener('click', function (e) {
+                e.preventDefault();
+                const filter = this.dataset.filter;
+                const listItems = document.querySelectorAll('.list-group-item:not(.empty-list)');
+
+                switch (filter) {
+                    case 'recettes':
+                        listItems.forEach(item => {
+                            item.style.display = item.querySelector('.montant-recette') ? '' : 'none';
+                        });
+                        break;
+                    case 'depenses':
+                        listItems.forEach(item => {
+                            item.style.display = item.querySelector('.montant-depense') ? '' : 'none';
+                        });
+                        break;
+                    case 'montant-asc':
+                        sortItemsByMontant(true);
+                        break;
+                    case 'montant-desc':
+                        sortItemsByMontant(false);
+                        break;
+                    default:
+                        listItems.forEach(item => {
+                            item.style.display = '';
+                        });
+                }
+            });
+        });
+
+        // Fonction de tri par montant
+        function sortItemsByMontant(ascending) {
+            const lists = document.querySelectorAll('.list-group');
+
+            lists.forEach(list => {
+                const items = Array.from(list.querySelectorAll('.list-group-item:not(.empty-list)'));
+
+                items.sort((a, b) => {
+                    const montantA = parseFloat(a.querySelector('.montant-badge')?.textContent || '0');
+                    const montantB = parseFloat(b.querySelector('.montant-badge')?.textContent || '0');
+
+                    return ascending ? montantA - montantB : montantB - montantA;
+                });
+
+                items.forEach(item => {
+                    list.appendChild(item);
+                });
+            });
+        }
+
+        // Accepter tout
+        const acceptAllBtn = document.getElementById('acceptAllBtn');
+        const confirmAcceptBtn = document.getElementById('confirmAcceptBtn');
+        const confirmModal = new bootstrap.Modal(document.getElementById('confirmModal'));
+
+        acceptAllBtn.addEventListener('click', function () {
+            // Cocher toutes les cases
+            const checkboxes = document.querySelectorAll('input[type="checkbox"][name="selected_items"]');
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = true;
+            });
+
+            confirmModal.show();
+        });
+
+        confirmAcceptBtn.addEventListener('click', function () {
+            // Soumettre tous les formulaires
+            document.querySelectorAll('form[id$="Form"]').forEach(form => {
+                if (form.querySelectorAll('input[type="checkbox"]:checked').length > 0) {
+                    form.submit();
+                }
+            });
+
+            confirmModal.hide();
+        });
+
+        // Animation de survol pour les boutons
+        const buttons = document.querySelectorAll('.accept-btn');
+        buttons.forEach(button => {
+            button.addEventListener('mouseenter', function () {
+                this.classList.add('pulse');
+            });
+            button.addEventListener('mouseleave', function () {
+                this.classList.remove('pulse');
+            });
+        });
+
+        // Toggle "Sélectionner tout" pour chaque section
+        const sections = document.querySelectorAll('.card');
+        sections.forEach(section => {
+            const checkboxes = section.querySelectorAll('input[type="checkbox"]');
+            if (checkboxes.length > 1) {
+                const header = section.querySelector('.card-header');
+                const selectAllLabel = document.createElement('div');
+                selectAllLabel.className = 'form-check form-switch ms-2';
+                selectAllLabel.innerHTML = `
+            <input class="form-check-input select-all" type="checkbox" role="switch">
+            <label class="form-check-label text-white">Tout sélectionner</label>
+          `;
+
+                header.appendChild(selectAllLabel);
+
+                const selectAllCheckbox = selectAllLabel.querySelector('.select-all');
+                selectAllCheckbox.addEventListener('change', function () {
+                    checkboxes.forEach(cb => {
+                        cb.checked = this.checked;
+                    });
+                });
+            }
+        });
+    });
+</script>
 </body>
 </html>

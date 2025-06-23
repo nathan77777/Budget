@@ -1,10 +1,8 @@
 import csv
 import json
-from operator import truth
 
 from django.db.models import Sum
 from django.db.models.functions import ExtractMonth
-from django.http import HttpResponse
 from django.template.loader import render_to_string
 from django.urls import reverse
 
@@ -24,7 +22,6 @@ from django.http import HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.utils import timezone
 from io import BytesIO
-import base64
 import re
 
 
@@ -32,6 +29,11 @@ import re
 def login(request):
     return render(request, 'login.html')
 
+def home(request):
+    emp = request.session['employee']
+    roles = request.session['role']
+
+    return render(request, 'home.html', {'emp': emp, 'role': roles})
 
 def treatment_login(request):
     if request.method == "POST":
@@ -208,14 +210,13 @@ def insert_libelle(request):
             if type_libelle == "crm":
                 id_produit_category = form.cleaned_data["id_product_category"]
                 id_client_category = form.cleaned_data["id_client_category"]
+                comportement = form.cleaned_data["comportement_client"]
                 is_valid = False
 
                 roles = request.session.get('role')
                 emp = request.session.get('employee')
                 montant_crm = (CRM.get_total_valid_by_month_year(date_operation.month, date_operation.year)
                                 + Realisations.get_total_valid_by_month_year(emp['deptno'], date_operation.month, date_operation.year))
-
-                print(montant_crm)
 
                 if roles['execute'] or montant_crm > montant:
                     is_valid = True
@@ -227,12 +228,11 @@ def insert_libelle(request):
                     dateCRM=date_operation,
                     montant=montant,
                     libelle=libelle,
-                    isValid=is_valid
+                    isValid=is_valid,
+                    descComportement=comportement
                 )
-                print("Succeed")
 
             else:
-                print("non")
                 id_category = Categories.objects.get(id_category=form.cleaned_data["id_category"])
                 if type_libelle == "prevision":
                     Previsions.objects.create(
@@ -385,7 +385,9 @@ def disconnect(request):
     return render(request, 'login.html')
 
 
-def render_to_pdf(template_src, context_dict={}):
+def render_to_pdf(template_src, context_dict=None):
+    if context_dict is None:
+        context_dict = {}
     result = BytesIO()
     pisa_status = pisa.CreatePDF(BytesIO(template_src.encode('utf-8')), dest=result)
     if not pisa_status.err:
@@ -496,3 +498,284 @@ def export_pdf(request):
 
     return HttpResponse("Méthode non autorisée", status=405)
 
+#------------------------------------------------------------------------------
+
+from django.shortcuts import render, get_object_or_404
+from django.http import JsonResponse
+from django.db.models import Count, Sum, Avg
+from .models import CRM, CategorieClient, CategorieProduit
+from django.db import connection
+
+
+def dashboard(request):
+    """Vue principale du tableau de bord pour visualiser les comportements clients"""
+
+    # Récupérer les stats générales
+    client_categories = CategorieClient.objects.all()
+    product_categories = CategorieProduit.objects.all()
+
+    # Récupérer les 5 derniers comportements clients
+    recent_behaviors = CRM.objects.filter(isValid=True).order_by('-dateCRM')[:5]
+
+    # Nombre total de comportements clients par catégorie de client
+    with connection.cursor() as cursor:
+        cursor.execute("""
+            SELECT cc.idClient, cc.Libelle, COUNT(crm.idCRM) as count
+            FROM categorie_client cc
+            LEFT JOIN CRM crm ON cc.idClient = crm.idClient
+            WHERE crm.isValid = TRUE
+            GROUP BY cc.idClient, cc.Libelle
+            ORDER BY count DESC
+        """)
+        client_behavior_counts = cursor.fetchall()
+
+    # Nombre total de comportements clients par catégorie de produit
+    with connection.cursor() as cursor:
+        cursor.execute("""
+            SELECT cp.idCategorie, cp.Libelle, COUNT(crm.idCRM) as count
+            FROM categorie_produit cp
+            LEFT JOIN CRM crm ON cp.idCategorie = crm.idProduct
+            WHERE crm.isValid = TRUE
+            GROUP BY cp.idCategorie, cp.Libelle
+            ORDER BY count DESC
+        """)
+        product_behavior_counts = cursor.fetchall()
+
+    # Types de comportements les plus courants (basés sur le libelle CRM)
+    with connection.cursor() as cursor:
+        cursor.execute("""
+            SELECT libelle, COUNT(*) as count
+            FROM CRM
+            WHERE isValid = TRUE
+            GROUP BY libelle
+            ORDER BY count DESC
+            LIMIT 5
+        """)
+        common_behaviors = cursor.fetchall()
+
+    context = {
+        'client_categories': client_categories,
+        'product_categories': product_categories,
+        'recent_behaviors': recent_behaviors,
+        'client_behavior_counts': client_behavior_counts,
+        'product_behavior_counts': product_behavior_counts,
+        'common_behaviors': common_behaviors,
+    }
+
+    return render(request, 'dash/dashboard.html', context)
+
+
+def client_category_detail(request, category_id):
+    """Vue détaillée pour une catégorie client spécifique"""
+    category = get_object_or_404(CategorieClient, idClient=category_id)
+
+    # Récupérer les comportements pour cette catégorie client
+    behaviors = CRM.objects.filter(idClient=category_id, isValid=True)
+
+    # Regrouper par catégorie de produit
+    with connection.cursor() as cursor:
+        cursor.execute("""
+            SELECT cp.idCategorie, cp.Libelle, COUNT(crm.idCRM) as count
+            FROM categorie_produit cp
+            JOIN CRM crm ON cp.idCategorie = crm.idProduct
+            WHERE crm.idClient = %s AND crm.isValid = TRUE
+            GROUP BY cp.idCategorie, cp.Libelle
+            ORDER BY count DESC
+        """, [category_id])
+        product_distribution = cursor.fetchall()
+
+    # Regrouper par type de comportement
+    with connection.cursor() as cursor:
+        cursor.execute("""
+            SELECT libelle, COUNT(*) as count
+            FROM CRM
+            WHERE idClient = %s AND isValid = TRUE
+            GROUP BY libelle
+            ORDER BY count DESC
+        """, [category_id])
+        behavior_types = cursor.fetchall()
+
+    context = {
+        'category': category,
+        'behaviors': behaviors,
+        'product_distribution': product_distribution,
+        'behavior_types': behavior_types,
+    }
+
+    return render(request, 'dash/client_category_detail.html', context)
+
+
+def product_category_detail(request, category_id):
+    """Vue détaillée pour une catégorie produit spécifique"""
+    category = get_object_or_404(CategorieProduit, idCategorie=category_id)
+
+    # Récupérer les comportements pour cette catégorie de produit
+    behaviors = CRM.objects.filter(idProduct=category_id, isValid=True)
+
+    # Regrouper par catégorie client
+    with connection.cursor() as cursor:
+        cursor.execute("""
+            SELECT cc.idClient, cc.Libelle, COUNT(crm.idCRM) as count
+            FROM categorie_client cc
+            JOIN CRM crm ON cc.idClient = crm.idClient
+            WHERE crm.idProduct = %s AND crm.isValid = TRUE
+            GROUP BY cc.idClient, cc.Libelle
+            ORDER BY count DESC
+        """, [category_id])
+        client_distribution = cursor.fetchall()
+
+    # Regrouper par type de comportement
+    with connection.cursor() as cursor:
+        cursor.execute("""
+            SELECT libelle, COUNT(*) as count
+            FROM CRM
+            WHERE idProduct = %s AND isValid = TRUE
+            GROUP BY libelle
+            ORDER BY count DESC
+        """, [category_id])
+        behavior_types = cursor.fetchall()
+
+    context = {
+        'category': category,
+        'behaviors': behaviors,
+        'client_distribution': client_distribution,
+        'behavior_types': behavior_types,
+    }
+
+    return render(request, 'dash/product_category_detail.html', context)
+
+
+def behavior_detail(request, crm_id):
+    """Vue détaillée pour un comportement client spécifique"""
+    behavior = get_object_or_404(CRM, idCRM=crm_id)
+
+    # Récupérer la catégorie client
+    try:
+        client_category = CategorieClient.objects.get(idClient=behavior.idClient)
+    except CategorieClient.DoesNotExist:
+        client_category = None
+
+    # Récupérer la catégorie produit
+    try:
+        product_category = CategorieProduit.objects.get(idCategorie=behavior.idProduct)
+    except CategorieProduit.DoesNotExist:
+        product_category = None
+
+    # Comportements similaires (même catégorie client et produit)
+    similar_behaviors = CRM.objects.filter(
+        idClient=behavior.idClient,
+        idProduct=behavior.idProduct,
+        isValid=True
+    ).exclude(idCRM=crm_id)[:5]
+
+    context = {
+        'behavior': behavior,
+        'client_category': client_category,
+        'product_category': product_category,
+        'similar_behaviors': similar_behaviors,
+    }
+
+    return render(request, 'dash/behavior_detail.html', context)
+
+
+def behavior_data_api(request):
+    """API pour récupérer des données pour les graphiques JavaScript"""
+
+    # Matrice des comportements par catégorie client/produit
+    matrix_data = []
+
+    client_categories = CategorieClient.objects.all()
+    product_categories = CategorieProduit.objects.all()
+
+    for client in client_categories:
+        row = {
+            'client_id': client.idClient,
+            'client_name': client.Libelle,
+            'products': []
+        }
+
+        for product in product_categories:
+            # Compter les comportements pour cette combinaison client/produit
+            count = CRM.objects.filter(
+                idClient=client.idClient,
+                idProduct=product.idCategorie,
+                isValid=True
+            ).count()
+
+            # Identifier le comportement le plus courant
+            most_common = CRM.objects.filter(
+                idClient=client.idClient,
+                idProduct=product.idCategorie,
+                isValid=True
+            ).values('libelle').annotate(count=Count('libelle')).order_by('-count').first()
+
+            common_behavior = most_common['libelle'] if most_common else None
+
+            row['products'].append({
+                'product_id': product.idCategorie,
+                'product_name': product.Libelle,
+                'count': count,
+                'common_behavior': common_behavior
+            })
+
+        matrix_data.append(row)
+
+    return JsonResponse({'matrix_data': matrix_data})
+
+
+# Dans views.py, ajoutez cette fonction pour gérer l'acceptation multiple
+def accept_multiple(request, type, cat_type):
+    if request.method == 'POST':
+        selected_items = request.POST.getlist('selected_items')
+
+        if type == 1:  # Prévisions
+            for item_id in selected_items:
+                prevision = Previsions.objects.get(id_prevision=item_id)
+                prevision.isValid = True
+                prevision.save()
+
+        elif type == 2:  # Réalisations
+            for item_id in selected_items:
+                realisation = Realisations.objects.get(id_realisation=item_id)
+                realisation.isValid = True
+                realisation.save()
+
+        elif type == 3:  # CRM
+            for item_id in selected_items:
+                crm_item = CRM.objects.get(idCRM=item_id)
+                crm_item.isValid = True
+                crm_item.save()
+
+        messages.success(request, f"{len(selected_items)} éléments ont été acceptés avec succès.")
+
+    return redirect('waiting', deptno=request.session.get('deptno', 1))
+
+
+
+import csv
+import io
+from django.contrib import messages
+from django.shortcuts import render, redirect
+from .services.form import UploadCSVForm
+
+
+# def import_form(request):
+#     return render(request, 'import_csv.html')
+
+
+def import_csv_view(request):
+    if request.method == 'POST':
+        form = UploadCSVForm(request.POST, request.FILES)
+        if form.is_valid():
+            fichier = request.FILES['fichier_csv']
+            try:
+                fichier.read().decode('utf-8')
+                messages.success(request, "Fichier CSV charge avec success ✅")
+                # Tu peux traiter le contenu ici si tu veux
+            except Exception as e:
+                messages.error(request, f"Erreur lors de la lecture : {e}")
+            return redirect('import')
+    else:
+        form = UploadCSVForm()
+
+    return render(request, 'import_csv.html', {'form': form})

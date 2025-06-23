@@ -1,3 +1,5 @@
+from cProfile import label
+
 from django import forms
 from budgetapp.models import Previsions, Realisations, Categories, CategorieProduit, CategorieClient
 
@@ -30,6 +32,12 @@ class LibelleForm(forms.Form):
         widget=forms.DateInput(attrs={'type': 'date', 'class': 'form-control'})
     )
 
+    comportement_client = forms.CharField(
+        max_length=100,
+        label="Comportement",
+        widget=forms.TextInput(attrs={'class': 'form-control'})
+    )
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -53,6 +61,12 @@ class LibelleForm(forms.Form):
             label="Catégorie client",
             required=False,
             widget=forms.Select(attrs={'class': 'form-control', 'id': 'id_client_category'})
+        )
+
+        self.fields['comportement_client'] = forms.CharField(
+            required=True,
+            label = "Comportement",
+            widget=forms.TextInput(attrs={'class': 'form-control', 'id': 'comportement_client'})
         )
 
         # ==== Catégories standards Dépenses/Recettes ====
@@ -90,9 +104,28 @@ class LibelleForm(forms.Form):
                 self.add_error('id_product_category', "Ce champ est obligatoire pour le type CRM.")
             if not cleaned_data.get("id_client_category"):
                 self.add_error('id_client_category', "Ce champ est obligatoire pour le type CRM.")
+            if not cleaned_data.get("comportement_client"):
+                self.add_error('comportement_client', "Ce champ est obligatoire pour le type CRM.")
         else:
             # Pour les autres types, vérifier la catégorie standard
             if not cleaned_data.get("id_category"):
                 self.add_error('id_category', "Ce champ est obligatoire.")
 
         return cleaned_data
+
+
+from django import forms
+
+class UploadCSVForm(forms.Form):
+    fichier_csv = forms.FileField(
+        label="Sélectionner un fichier CSV",
+        help_text="Format attendu : .csv avec encodage UTF-8"
+    )
+
+    def clean_fichier_csv(self):
+        fichier = self.cleaned_data['fichier_csv']
+        if not fichier.name.endswith('.csv'):
+            raise forms.ValidationError("Le fichier doit être au format .csv")
+        if fichier.multiple_chunks():
+            raise forms.ValidationError("Le fichier est trop volumineux.")
+        return fichier

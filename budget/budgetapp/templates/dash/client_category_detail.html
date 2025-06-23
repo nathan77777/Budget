@@ -1,0 +1,230 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ category.Libelle }} - Détails Catégorie Client{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4">
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Tableau de bord</a></li>
+            <li class="breadcrumb-item active">{{ category.Libelle }}</li>
+        </ol>
+    </nav>
+
+    <div class="entity-relation card bg-primary text-white mb-4">
+        <div class="card-body text-center">
+            <h2 class="mb-0">
+                <i class="fas fa-users me-2"></i> {{ category.Libelle }}
+            </h2>
+            <p class="mb-0">{{ category.Description }}</p>
+        </div>
+    </div>
+    
+    <!-- Statistiques et graphiques sur cette catégorie client -->
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Distribution par Catégorie de Produit</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="productDistributionChart" height="300"></canvas>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Types de Comportements</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="behaviorTypesChart" height="300"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Liste des comportements pour cette catégorie client -->
+    <div class="card mt-4">
+        <div class="card-header">
+            <h5 class="mb-0">Comportements Enregistrés</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Comportement</th>
+                            <th>Produit</th>
+                            <th>Description</th>
+                            <th>Montant</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for behavior in behaviors %}
+                        <tr>
+                            <td>{{ behavior.dateCRM|date:"d/m/Y" }}</td>
+                            <td>
+                                <span class="badge-behavior">{{ behavior.libelle }}</span>
+                            </td>
+                            <td>
+                                {% for product_id, product_name, count in product_distribution %}
+                                    {% if product_id == behavior.idProduct %}
+                                        <a href="{% url 'product_category_detail' product_id %}">
+                                            {{ product_name }}
+                                        </a>
+                                    {% endif %}
+                                {% endfor %}
+                            </td>
+                            <td>{{ behavior.descComportement }}</td>
+                            <td>{% if behavior.montant %}{{ behavior.montant }} Ar{% else %}N/A{% endif %}</td>
+                            <td>
+                                <a href="{% url 'behavior_detail' behavior.idCRM %}" class="btn btn-sm btn-outline-primary">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="text-center">Aucun comportement enregistré pour cette catégorie</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Recommandations basées sur les comportements -->
+    <div class="card mt-4">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">Recommandations</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-12">
+                    <div id="recommendationsContainer">
+                        <div class="recommendation-item p-3 border rounded mb-3">
+                            <h5><i class="fas fa-lightbulb text-warning me-2"></i> Tendances observées</h5>
+                            <p>
+                                Les clients de la catégorie <strong>{{ category.Libelle }}</strong> montrent une préférence pour 
+                                {% for product_id, product_name, count in product_distribution|slice:":1" %}
+                                    <span class="text-primary">{{ product_name }}</span>
+                                {% endfor %}
+                                avec <strong>{{ behaviors.count }}</strong> comportements enregistrés.
+                            </p>
+                        </div>
+                        
+                        <div class="recommendation-item p-3 border rounded mb-3">
+                            <h5><i class="fas fa-chart-line text-success me-2"></i> Opportunités commerciales</h5>
+                            <p>
+                                Basé sur les tendances comportementales, envisagez des actions marketing ciblées sur
+                                {% for behavior, count in behavior_types|slice:":2" %}
+                                    <span class="behavior-pill" style="background-color: {% cycle '#3498db' '#e74c3c' %};">{{ behavior }}</span>
+                                {% endfor %}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Graphique pour la distribution par catégorie de produit
+        const productDistributionData = {
+            labels: [{% for product_id, product_name, count in product_distribution %}'{{ product_name }}'{% if not forloop.last %}, {% endif %}{% endfor %}],
+            datasets: [{
+                label: 'Nombre de comportements',
+                data: [{% for product_id, product_name, count in product_distribution %}{{ count }}{% if not forloop.last %}, {% endif %}{% endfor %}],
+                backgroundColor: [
+                    'rgba(52, 152, 219, 0.7)',
+                    'rgba(46, 204, 113, 0.7)',
+                    'rgba(155, 89, 182, 0.7)',
+                    'rgba(241, 196, 15, 0.7)',
+                    'rgba(230, 126, 34, 0.7)'
+                ],
+                borderColor: [
+                    'rgba(52, 152, 219, 1)',
+                    'rgba(46, 204, 113, 1)',
+                    'rgba(155, 89, 182, 1)',
+                    'rgba(241, 196, 15, 1)',
+                    'rgba(230, 126, 34, 1)'
+                ],
+                borderWidth: 1
+            }]
+        };
+        
+        const productDistributionChart = new Chart(
+            document.getElementById('productDistributionChart'),
+            {
+                type: 'pie',
+                data: productDistributionData,
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return `${context.label}: ${context.raw} comportements`;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        );
+        
+        // Graphique pour les types de comportements
+        const behaviorTypesData = {
+            labels: [{% for behavior, count in behavior_types %}'{{ behavior }}'{% if not forloop.last %}, {% endif %}{% endfor %}],
+            datasets: [{
+                label: 'Nombre d\'occurrences',
+                data: [{% for behavior, count in behavior_types %}{{ count }}{% if not forloop.last %}, {% endif %}{% endfor %}],
+                backgroundColor: 'rgba(52, 152, 219, 0.7)',
+                borderColor: 'rgba(52, 152, 219, 1)',
+                borderWidth: 1
+            }]
+        };
+        
+        const behaviorTypesChart = new Chart(
+            document.getElementById('behaviorTypesChart'),
+            {
+                type: 'bar',
+                data: behaviorTypesData,
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return `${context.parsed.x} occurrences`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            }
+        );
+    });
+</script>
+{% endblock %}

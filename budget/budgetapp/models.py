@@ -27,6 +27,7 @@ class CategorieClient(models.Model):
     class Meta:
         db_table = 'categorie_client'
 
+
 class CategorieProduit(models.Model):
     idCategorie = models.IntegerField(primary_key=True)
     Libelle = models.CharField(max_length=20)
@@ -35,7 +36,6 @@ class CategorieProduit(models.Model):
         return self.Libelle
     class Meta:
         db_table = 'categorie_produit'
-
 
 
 class Departements(models.Model):
@@ -61,12 +61,14 @@ class Employes(models.Model):
         db_table = 'Employes'
 
 
+
 class CRM(models.Model):
     idCRM = models.AutoField(primary_key=True)
     idClient = models.IntegerField()
     idProduct = models.IntegerField()
     dateCRM = models.DateField(null=True, blank=True)
     libelle = models.CharField(max_length=50)
+    descComportement = models.CharField(max_length=100, default="Comportement")
     montant = models.FloatField(null=True, blank=True)
     isValid = models.BooleanField(default=False)
 
@@ -185,7 +187,7 @@ class Realisations(models.Model):
     @staticmethod
     def get_total_valid_by_month_year(deptno, month, year):
         """
-        Calcule le total des montants des CRM pour un mois et une année donnés.
+        Calcule le total des montants des realisations pour un mois et une année donnés.
 
         Args:
             month (int): Le mois (1-12)

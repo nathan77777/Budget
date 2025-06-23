@@ -3,144 +3,78 @@
 <head>
     <meta charset="UTF-8">
     <title>Insertion Libellé</title>
-    <style>
-        :root {
-            --primary-color: #28a745;
-            --hover-color: #218838;
-            --border-color: #ddd;
-            --background-color: #f9f9f9;
-            --input-border: #ccc;
-            --font-family: Arial, sans-serif;
-            --text-color: #333;
-        }
-
-        /* Styles généraux */
-        body {
-            font-family: var(--font-family), serif;
-            color: var(--text-color);
-            margin: 20px;
-            background-color: #fff;
-        }
-
-        /* Titre de la page */
-        h2 {
-            text-align: center;
-            margin-bottom: 20px;
-            color: var(--primary-color);
-        }
-
-        /* Conteneur du formulaire */
-        form {
-            width: 90%;
-            max-width: 600px;
-            margin: auto;
-            padding: 20px;
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            background-color: var(--background-color);
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-        }
-
-        /* Style des labels */
-        label {
-            display: block;
-            margin-top: 10px;
-            margin-bottom: 5px;
-            font-weight: bold;
-        }
-
-        /* Champs de formulaire */
-        input,
-        select,
-        textarea {
-            width: 100%;
-            padding: 10px;
-            margin-bottom: 10px;
-            border: 1px solid var(--input-border);
-            border-radius: 4px;
-            font-size: 1em;
-        }
-
-        /* Bouton d'enregistrement */
-        button {
-            width: 100%;
-            padding: 12px;
-            background-color: var(--primary-color);
-            color: #fff;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 1em;
-            transition: background-color 0.3s ease;
-            margin-top: 15px;
-        }
-
-        button:hover {
-            background-color: var(--hover-color);
-        }
-
-        /* Adaptation sur mobile */
-        @media (max-width: 600px) {
-            form {
-                padding: 15px;
-            }
-        }
-
-        /* Style pour les champs cachés */
-        .hidden {
-            display: none;
-        }
-    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
+    <!-- Font Awesome pour les icônes -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <!-- Bootstrap 5 pour un design plus moderne -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.1.3/css/bootstrap.min.css">
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'budgetapp/insert_libelle.css' %}">
 </head>
 <body>
-<h2 style="text-align: center;">Insertion d'un Libellé</h2>
+<h2 style="text-align: center;">Insertion d'un Libell&eacute;</h2>
 <form method="post">
     {% csrf_token %}
-    
-    <label for="id_type_libelle">Type de Libellé</label>
+
+    <label for="id_type_libelle">Type de Libell&eacute;</label>
     {{ form.type_libelle }}
 
     <!-- Champ catégorie standard -->
     <div id="standard_category_container">
-        <label for="id_category">Catégorie</label>
+        <label for="id_category">Cat&eacute;gorie</label>
         {{ form.id_category }}
     </div>
 
     <!-- Champs spécifiques pour CRM -->
     <div id="crm_fields_container" class="hidden">
-        <label for="id_product_category">Catégorie produits</label>
+        <label for="id_product_category">Cat&eacute;gorie produits</label>
         {{ form.id_product_category }}
 
-        <label for="id_client_category">Catégorie client</label>
+        <label for="id_client_category">Cat&eacute;gorie client</label>
         {{ form.id_client_category }}
+
+        <label for="comportement_client">Comportement du client</label>
+        {{ form.comportement_client }}
+
     </div>
 
-    <label for="id_libelle">Description</label>
+    <label for="id_libelle" id="libelle">Description</label>
     {{ form.libelle }}
 
     <label for="id_montant">Montant</label>
     {{ form.montant }}
 
-    <label for="id_date_operation">Date de l'opération</label>
+    <label for="id_date_operation">Date de l'op&eacute;ration</label>
     {{ form.date_operation }}
 
     <button type="submit">Enregistrer</button>
 </form>
 
+<div class="btn-group">
+    <a href="{% url 'home_retour' %}">
+        <button type="button" class="btn btn-primary" id="toggleView">
+            <i class="fas fa-th-large"></i> Retour vers Accueil
+        </button>
+    </a>
+</div>
+
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
+    document.addEventListener('DOMContentLoaded', function () {
         const typeLibelleSelect = document.getElementById('id_type_libelle');
         const standardCategoryContainer = document.getElementById('standard_category_container');
         const crmFieldsContainer = document.getElementById('crm_fields_container');
 
         // Fonction pour gérer l'affichage des champs en fonction du type sélectionné
         function toggleFields() {
+            let lib = document.getElementById("libelle");
             if (typeLibelleSelect.value === 'crm') {
                 standardCategoryContainer.classList.add('hidden');
                 crmFieldsContainer.classList.remove('hidden');
+                lib.innerText = "Action CRM";
             } else {
                 standardCategoryContainer.classList.remove('hidden');
                 crmFieldsContainer.classList.add('hidden');
+                lib.innerText = "Descriptions"
             }
         }
 
