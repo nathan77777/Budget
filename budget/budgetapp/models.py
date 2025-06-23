@@ -226,6 +226,8 @@ class SoldeDebut(models.Model):
 class Client(models.Model):
     nom = models.CharField(max_length=20)
     prenoms = models.CharField(max_length=20)
+    nom_utilisateur = models.CharField(max_length=20, default='user')
+    motdepasse = models.CharField(max_length=20, default='default')
 
     def __str__(self):
         return f"{self.nom} {self.prenoms}"
